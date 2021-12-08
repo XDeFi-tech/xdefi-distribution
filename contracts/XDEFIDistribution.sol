@@ -48,6 +48,8 @@ contract XDEFIDistribution is ERC721Enumerable {
     address public owner;
     address public pendingOwner;
 
+    bool internal _locked;
+
     constructor (address XDEFI_, string memory baseURI_) ERC721("Locked XDEFI", "lXDEFI") {
         require((XDEFI = XDEFI_) != address(0), "INVALID_FUNDS_TOKEN_ADDRESS");
         owner = msg.sender;
@@ -57,6 +59,13 @@ contract XDEFIDistribution is ERC721Enumerable {
     modifier onlyOwner() {
         require(owner == msg.sender, "NOT_OWNER");
         _;
+    }
+
+    modifier noReenter() {
+        require(!_locked, "LOCKED");
+        _locked = true;
+        _;
+        _locked = false;
     }
 
     /*******************/
@@ -116,7 +125,7 @@ contract XDEFIDistribution is ERC721Enumerable {
         return _withdrawableGiven(position.units, position.depositedXDEFI, position.pointsCorrection);
     }
 
-    function lock(uint256 amount_, uint256 duration_, address destination_) public returns (uint256 tokenId_) {
+    function lock(uint256 amount_, uint256 duration_, address destination_) public noReenter returns (uint256 tokenId_) {
         // Get bonus multiplier and check that it is not zero (which validates the duration).
         uint256 bonusMultiplier = bonusMultiplierOf[duration_];
         require(bonusMultiplier != uint256(0), "INVALID_DURATION");
@@ -151,7 +160,23 @@ contract XDEFIDistribution is ERC721Enumerable {
         return lock(amount_, duration_, destination_);
     }
 
-    function unlock(uint256 tokenId_, address destination_) external returns (uint256 amount_) {
+    // TODO: This needs to be tested. Also, are returns ok?
+    function relock(uint256 tokenId_, uint256 lockAmount_, uint256 duration_, address destination_) external returns (uint256 amountUnlocked_, uint256 newTokenId_) {
+        // Handle the unlock and get the amount of XDEFI eligible to withdraw.
+        // NOTE: Sending token to self to be used for re-locking.
+        amountUnlocked_ = unlock(tokenId_, address(this));
+
+        // Handle the lock position creation.
+        newTokenId_ = lock(lockAmount_, duration_, destination_);
+
+        // Send the excess XDEFI to the destination.
+        SafeERC20.safeTransfer(IERC20(XDEFI), destination_, amountUnlocked_ - lockAmount_);
+
+        // NOTE: This needs to be done again after transferring out.
+        _updateXDEFIBalance();
+    }
+
+    function unlock(uint256 tokenId_, address destination_) public noReenter returns (uint256 amountUnlocked_) {
         // Check that the caller is the position NFT owner.
         require(ownerOf(tokenId_) == msg.sender, "NOT_OWNER");
 
@@ -166,10 +191,10 @@ contract XDEFIDistribution is ERC721Enumerable {
         require(block.timestamp >= uint256(expiry), "CANNOT_UNLOCK");
 
         // Get the withdrawable amount of XDEFI for the position.
-        amount_ = _withdrawableGiven(units, depositedXDEFI, position.pointsCorrection);
+        amountUnlocked_ = _withdrawableGiven(units, depositedXDEFI, position.pointsCorrection);
 
         // Send the the unlocked XDEFI to the destination.
-        SafeERC20.safeTransfer(IERC20(XDEFI), destination_, amount_);
+        SafeERC20.safeTransfer(IERC20(XDEFI), destination_, amountUnlocked_);
 
         // Track deposits
         totalDepositedXDEFI -= uint256(depositedXDEFI);
@@ -181,7 +206,7 @@ contract XDEFIDistribution is ERC721Enumerable {
         totalUnits -= units;
         delete positionOf[tokenId_];
 
-        emit LockPositionWithdrawn(tokenId_, msg.sender, destination_, amount_);
+        emit LockPositionWithdrawn(tokenId_, msg.sender, destination_, amountUnlocked_);
     }
 
     function updateDistribution() external {
@@ -199,11 +224,43 @@ contract XDEFIDistribution is ERC721Enumerable {
         emit DistributionUpdated(msg.sender, newXDEFI);
     }
 
-    function _updateXDEFIBalance() internal returns (int256 newFundsTokenBalance_) {
-        uint256 previousDistributableXDEFI = distributableXDEFI;
-        distributableXDEFI = IERC20(XDEFI).balanceOf(address(this)) - totalDepositedXDEFI;
+    /****************************/
+    /* Batch Position Functions */
+    /****************************/
 
-        return _toInt256Safe(distributableXDEFI) - _toInt256Safe(previousDistributableXDEFI);
+    // TODO: This needs to be tested. Also, are returns ok?
+    function relockBatch(uint256[] memory tokenIds_, uint256 lockAmount_, uint256 duration_, address destination_) external returns (uint256 amountUnlocked_, uint256 newTokenId_) {
+        uint256 count = tokenIds_.length;
+        require(count > uint256(1), "USE_RELOCK");
+
+        // Handle the unlock for each position and accumulate the unlocked amount.
+        // NOTE: Sending token to self to be used for re-locking.
+        for (uint256 i; i < count; ++i) {
+            amountUnlocked_ += unlock(tokenIds_[i], address(this));
+        }
+
+        // Handle the lock position creation.
+        newTokenId_ = lock(lockAmount_, duration_, destination_);
+
+        // Send the excess XDEFI to the destination.
+        SafeERC20.safeTransfer(IERC20(XDEFI), destination_, amountUnlocked_ - lockAmount_);
+
+        // NOTE: This needs to be done again after transferring out.
+        _updateXDEFIBalance();
+    }
+
+    // TODO: This needs to be tested.
+    function unlockBatch(uint256[] memory tokenIds_, address destination_) external returns (uint256 amountUnlocked_) {
+        uint256 count = tokenIds_.length;
+        require(count > uint256(1), "USE_UNLOCK");
+
+        // Handle the unlock for each position and accumulate the unlocked amount.
+        for (uint256 i; i < count; ++i) {
+            amountUnlocked_ += unlock(tokenIds_[i], destination_);
+        }
+
+        // Send the effective unlock amount of XDEFI to the destination.
+        SafeERC20.safeTransfer(IERC20(XDEFI), destination_, amountUnlocked_);
     }
 
     /*****************/
@@ -214,6 +271,7 @@ contract XDEFIDistribution is ERC721Enumerable {
         return _getPoints(amount_, duration_);
     }
 
+    // TODO: This needs to be tested.
     function merge(uint256[] memory tokenIds_, address destination_) external returns (uint256 tokenId_) {
         uint256 count = tokenIds_.length;
         require(count > uint256(1), "MIN_2_TO_MERGE");
@@ -270,6 +328,13 @@ contract XDEFIDistribution is ERC721Enumerable {
     function _toUint256Safe(int256 x_) internal pure returns (uint256 y_) {
         assert(x_ >= int256(0));
         return uint256(x_);
+    }
+
+    function _updateXDEFIBalance() internal returns (int256 newFundsTokenBalance_) {
+        uint256 previousDistributableXDEFI = distributableXDEFI;
+        distributableXDEFI = IERC20(XDEFI).balanceOf(address(this)) - totalDepositedXDEFI;
+
+        return _toInt256Safe(distributableXDEFI) - _toInt256Safe(previousDistributableXDEFI);
     }
 
 }
