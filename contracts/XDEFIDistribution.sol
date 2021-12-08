@@ -6,24 +6,14 @@ import { ERC721, ERC721Enumerable, Strings } from "@openzeppelin/contracts/token
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import { IEIP2612 } from "./interfaces/IEIP2612.sol";
+import { IXDEFIDistribution } from "./interfaces/IXDEFIDistribution.sol";
 
-contract XDEFIDistribution is ERC721Enumerable {
-
-    event OwnershipProposed(address indexed owner, address indexed pendingOwner);
-    event OwnershipAccepted(address indexed previousOwner, address indexed owner);
-
-    event LockPeriodAdded(uint256 duration, uint256 bonusMultiplier);
-    event LockPeriodRemoved(uint256 duration);
-
-    event LockPositionCreated(uint256 indexed tokenId, address indexed sender, address indexed owner, uint256 amount, uint256 duration);
-    event LockPositionWithdrawn(uint256 indexed tokenId, address indexed owner, address indexed destination, uint256 amount);
-
-    event DistributionUpdated(address indexed caller, uint256 amount);
+contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     struct Position {
         uint96 units;  // 240000000000000000000000000 XDEFI * 100x bonus (which fits in a uint96)
         uint88 depositedXDEFI; // XDEFI cap is 240000000000000000000000000 (which fits in a uint88)
-        uint32 expiry;  // block timestamps for the next 32 years (which fits in a uint32)
+        uint32 expiry;  // block timestamps for the next 50 years (which fits in a uint32)
         int256 pointsCorrection;
     }
 
@@ -41,7 +31,7 @@ contract XDEFIDistribution is ERC721Enumerable {
 
     mapping(uint256 => uint256) public bonusMultiplierOf;  // Scaled by 100, so 1.1 is 110.
 
-    uint256 constant zeroDurationPointBase = uint256(100);
+    uint256 constant internal zeroDurationPointBase = uint256(100);
 
     string public baseURI;
 
@@ -110,17 +100,7 @@ contract XDEFIDistribution is ERC721Enumerable {
     /* Position Functions */
     /**********************/
 
-    function _withdrawableGiven(uint96 units_, uint88 depositedXDEFI_, int256 pointsCorrection_) internal view returns(uint256 withdrawableXDEFI_) {
-        return
-            (
-                _toUint256Safe(
-                    _toInt256Safe(_pointsPerUnit * uint256(units_)) +
-                    pointsCorrection_
-                ) / _pointsMultiplier
-            ) + uint256(depositedXDEFI_);
-    }
-
-    function withdrawableOf(uint256 tokenId_) public view returns(uint256 withdrawableXDEFI_) {
+    function withdrawableOf(uint256 tokenId_) public view returns (uint256 withdrawableXDEFI_) {
         Position storage position = positionOf[tokenId_];
         return _withdrawableGiven(position.units, position.depositedXDEFI, position.pointsCorrection);
     }
@@ -298,7 +278,7 @@ contract XDEFIDistribution is ERC721Enumerable {
         return _getPointsFromTokenId(tokenId_);
     }
 
-    function tokenURI(uint256 tokenId_) public view override returns (string memory tokenURI_) {
+    function tokenURI(uint256 tokenId_) public view override(IXDEFIDistribution, ERC721) returns (string memory tokenURI_) {
         require(_exists(tokenId_), "NO_TOKEN");
         return string(abi.encodePacked(baseURI, Strings.toString(tokenId_)));
     }
@@ -335,6 +315,16 @@ contract XDEFIDistribution is ERC721Enumerable {
         distributableXDEFI = IERC20(XDEFI).balanceOf(address(this)) - totalDepositedXDEFI;
 
         return _toInt256Safe(distributableXDEFI) - _toInt256Safe(previousDistributableXDEFI);
+    }
+
+    function _withdrawableGiven(uint96 units_, uint88 depositedXDEFI_, int256 pointsCorrection_) internal view returns (uint256 withdrawableXDEFI_) {
+        return
+            (
+                _toUint256Safe(
+                    _toInt256Safe(_pointsPerUnit * uint256(units_)) +
+                    pointsCorrection_
+                ) / _pointsMultiplier
+            ) + uint256(depositedXDEFI_);
     }
 
 }
