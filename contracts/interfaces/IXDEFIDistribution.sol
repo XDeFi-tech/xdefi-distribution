@@ -7,11 +7,10 @@ interface IXDEFIDistribution {
     event OwnershipProposed(address indexed owner, address indexed pendingOwner);
     event OwnershipAccepted(address indexed previousOwner, address indexed owner);
 
-    event LockPeriodAdded(uint256 duration, uint256 bonusMultiplier);
-    event LockPeriodRemoved(uint256 duration);
+    event LockPeriodSet(uint256 duration, uint256 bonusMultiplier);
 
-    event LockPositionCreated(uint256 indexed tokenId, address indexed sender, address indexed owner, uint256 amount, uint256 duration);
-    event LockPositionWithdrawn(uint256 indexed tokenId, address indexed owner, address indexed destination, uint256 amount);
+    event LockPositionCreated(uint256 indexed tokenId, address indexed owner, uint256 amount, uint256 duration);
+    event LockPositionWithdrawn(uint256 indexed tokenId, address indexed owner, uint256 amount);
 
     event DistributionUpdated(address indexed caller, uint256 amount);
 
@@ -39,11 +38,9 @@ interface IXDEFIDistribution {
 
     function acceptOwnership() external;
 
-    function addLockPeriods(uint256[] memory durations_, uint256[] memory multipliers) external;
-
-    function removeLockPeriods(uint256[] memory durations_) external;
-
     function setBaseURI(string memory baseURI_) external;
+
+    function setLockPeriods(uint256[] memory durations_, uint256[] memory multipliers) external;
 
     function proposeOwnership(address newOwner_) external;
 
