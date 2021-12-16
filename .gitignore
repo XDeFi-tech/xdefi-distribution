@@ -4,3 +4,4 @@ artifacts
 cache/solidity-files-cache.json
 coverage
 coverage.json
+.secrets.json
