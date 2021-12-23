@@ -5,6 +5,8 @@ const totalSupply = '240000000000000000000000000';
 
 const toWei = (value, add = 0, sub = 0) => (BigInt(value) * 1000000000000000000n + BigInt(add) - BigInt(sub)).toString();
 
+// TODO: Test lockWithPermit
+
 describe("XDEFIDistribution", () => {
     let XDEFI;
     let XDEFIDistribution;

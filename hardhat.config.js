@@ -25,7 +25,10 @@ module.exports = {
                         stackAllocation: true
                     }
                 }
-            }
+            },
+            metadata: {
+                bytecodeHash: "none"
+            },
         }
     },
     defaultNetwork: "hardhat",

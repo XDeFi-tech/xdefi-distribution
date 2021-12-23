@@ -1,4 +1,4 @@
-//SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.10;
 
@@ -11,17 +11,17 @@ import { IXDEFIDistribution } from "./interfaces/IXDEFIDistribution.sol";
 contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     struct Position {
-        uint96 units;  // 240000000000000000000000000 XDEFI * 100x bonus (which fits in a uint96)
-        uint88 depositedXDEFI; // XDEFI cap is 240000000000000000000000000 (which fits in a uint88)
-        uint32 expiry;  // block timestamps for the next 50 years (which fits in a uint32)
+        uint96 units;  // 240,000,000,000,000,000,000,000,000 XDEFI * 100x bonus (which fits in a uint96).
+        uint88 depositedXDEFI; // XDEFI cap is 240000000000000000000000000 (which fits in a uint88).
+        uint32 expiry;  // block timestamps for the next 50 years (which fits in a uint32).
         int256 pointsCorrection;
     }
 
-    // optimize, see https://github.com/ethereum/EIPs/issues/1726#issuecomment-472352728
+    // See https://github.com/ethereum/EIPs/issues/1726#issuecomment-472352728
     uint256 constant internal _pointsMultiplier = uint256(2**128);
     uint256 internal _pointsPerUnit;
 
-    address public XDEFI;
+    address public immutable XDEFI;
 
     uint256 public distributableXDEFI;
     uint256 public totalDepositedXDEFI;
@@ -41,7 +41,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     uint256 internal _locked;
 
     constructor (address XDEFI_, string memory baseURI_) ERC721("Locked XDEFI", "lXDEFI") {
-        require((XDEFI = XDEFI_) != address(0), "INVALID_FUNDS_TOKEN_ADDRESS");
+        require((XDEFI = XDEFI_) != address(0), "INVALID_TOKEN");
         owner = msg.sender;
         baseURI = baseURI_;
     }
@@ -103,7 +103,6 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         return _lock(amount_, duration_, destination_);
     }
 
-    // TODO: this needs testing.
     function lockWithPermit(uint256 amount_, uint256 duration_, address destination_, uint256 deadline_, uint8 v_, bytes32 r_, bytes32 s_) external noReenter returns (uint256 tokenId_) {
         // Approve this contract for the amount, using the provided signature.
         IEIP2612(XDEFI).permit(msg.sender, address(this), amount_, deadline_, v_, r_, s_);
@@ -119,13 +118,16 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         // Handle the unlock and get the amount of XDEFI eligible to withdraw.
         amountUnlocked_ = _unlock(msg.sender, tokenId_);
 
+        // Throw convenient error if trying to re-lock more than was unlocked. `amountUnlocked_ - lockAmount_` would have reverted below anyway.
+        require(lockAmount_ <= amountUnlocked_, "INSUFFICIENT_AMOUNT_UNLOCKED");
+
         // Handle the lock position creation and get the tokenId of the locked position.
         newTokenId_ = _lock(lockAmount_, duration_, destination_);
 
         // Send the excess XDEFI to the destination.
         SafeERC20.safeTransfer(IERC20(XDEFI), destination_, amountUnlocked_ - lockAmount_);
 
-        // NOTE: This needs to be done again after transferring out.
+        // NOTE: This needs to be done after updating `totalDepositedXDEFI` (which happens in `_unlock`) and transferring out.
         _updateXDEFIBalance();
     }
 
@@ -136,21 +138,20 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         // Send the the unlocked XDEFI to the destination.
         SafeERC20.safeTransfer(IERC20(XDEFI), destination_, amountUnlocked_);
 
-        // NOTE: This needs to be done after updating totalDepositedXDEFI and transferring out
+        // NOTE: This needs to be done after updating `totalDepositedXDEFI` (which happens in `_unlock`) and transferring out.
         _updateXDEFIBalance();
     }
 
     function updateDistribution() external {
+        uint256 totalUnitsCached = totalUnits;
+
+        require(totalUnitsCached > uint256(0), "NO_UNIT_SUPPLY");
+
         uint256 newXDEFI = _toUint256Safe(_updateXDEFIBalance());
-
-        // TODO: evaluate the need for this
-        // if (newXDEFI <= int256(0)) return;
-
-        require(totalUnits > uint256(0), "NO_UNIT_SUPPLY");
 
         if (newXDEFI == uint256(0)) return;
 
-        _pointsPerUnit += ((newXDEFI * _pointsMultiplier) / totalUnits);
+        _pointsPerUnit += ((newXDEFI * _pointsMultiplier) / totalUnitsCached);
 
         emit DistributionUpdated(msg.sender, newXDEFI);
     }
@@ -163,13 +164,16 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         // Handle the unlocks and get the amount of XDEFI eligible to withdraw.
         amountUnlocked_ = _unlockBatch(msg.sender, tokenIds_);
 
+        // Throw convenient error if trying to re-lock more than was unlocked. `amountUnlocked_ - lockAmount_` would have reverted below anyway.
+        require(lockAmount_ <= amountUnlocked_, "INSUFFICIENT_AMOUNT_UNLOCKED");
+
         // Handle the lock position creation and get the tokenId of the locked position.
         newTokenId_ = _lock(lockAmount_, duration_, destination_);
 
         // Send the excess XDEFI to the destination.
         SafeERC20.safeTransfer(IERC20(XDEFI), destination_, amountUnlocked_ - lockAmount_);
 
-        // NOTE: This needs to be done again after transferring out.
+        // NOTE: This needs to be done after updating `totalDepositedXDEFI` (which happens in `_unlockBatch`) and transferring out.
         _updateXDEFIBalance();
     }
 
@@ -180,7 +184,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         // Send the the unlocked XDEFI to the destination.
         SafeERC20.safeTransfer(IERC20(XDEFI), destination_, amountUnlocked_);
 
-        // NOTE: This needs to be done after updating totalDepositedXDEFI and transferring out
+        // NOTE: This needs to be done after updating `totalDepositedXDEFI` (which happens in `_unlockBatch`) and transferring out.
         _updateXDEFIBalance();
     }
 
@@ -241,6 +245,9 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     }
 
     function _lock(uint256 amount_, uint256 duration_, address destination_) internal returns (uint256 tokenId_) {
+        // Prevent locking 0 amount in order generate many score-less NFTs, even if it is inefficient, and such NFTs would be ignored.
+        require(amount_ != uint256(0), "INVALID_AMOUNT");
+
         // Get bonus multiplier and check that it is not zero (which validates the duration).
         uint256 bonusMultiplier = bonusMultiplierOf[duration_];
         require(bonusMultiplier != uint256(0), "INVALID_DURATION");
@@ -275,9 +282,9 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         return uint256(x_);
     }
 
-    function _unlock(address account, uint256 tokenId_) internal returns (uint256 amountUnlocked_) {
-        // Check that the caller is the position NFT owner.
-        require(ownerOf(tokenId_) == account, "NOT_OWNER");
+    function _unlock(address account_, uint256 tokenId_) internal returns (uint256 amountUnlocked_) {
+        // Check that the account is the position NFT owner.
+        require(ownerOf(tokenId_) == account_, "NOT_OWNER");
 
         // Fetch position.
         Position storage position = positionOf[tokenId_];
@@ -292,31 +299,31 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         // Get the withdrawable amount of XDEFI for the position.
         amountUnlocked_ = _withdrawableGiven(units, depositedXDEFI, position.pointsCorrection);
 
-        // Track deposits
+        // Track deposits.
         totalDepositedXDEFI -= uint256(depositedXDEFI);
 
-        // Burn FDT Position
+        // Burn FDT Position.
         totalUnits -= units;
         delete positionOf[tokenId_];
 
-        emit LockPositionWithdrawn(tokenId_, account, amountUnlocked_);
+        emit LockPositionWithdrawn(tokenId_, account_, amountUnlocked_);
     }
 
-    function _unlockBatch(address account, uint256[] memory tokenIds_) internal returns (uint256 amountUnlocked_) {
+    function _unlockBatch(address account_, uint256[] memory tokenIds_) internal returns (uint256 amountUnlocked_) {
         uint256 count = tokenIds_.length;
         require(count > uint256(1), "USE_UNLOCK");
 
         // Handle the unlock for each position and accumulate the unlocked amount.
         for (uint256 i; i < count; ++i) {
-            amountUnlocked_ += _unlock(account, tokenIds_[i]);
+            amountUnlocked_ += _unlock(account_, tokenIds_[i]);
         }
     }
 
     function _updateXDEFIBalance() internal returns (int256 newFundsTokenBalance_) {
         uint256 previousDistributableXDEFI = distributableXDEFI;
-        distributableXDEFI = IERC20(XDEFI).balanceOf(address(this)) - totalDepositedXDEFI;
+        uint256 currentDistributableXDEFI = distributableXDEFI = IERC20(XDEFI).balanceOf(address(this)) - totalDepositedXDEFI;
 
-        return _toInt256Safe(distributableXDEFI) - _toInt256Safe(previousDistributableXDEFI);
+        return _toInt256Safe(currentDistributableXDEFI) - _toInt256Safe(previousDistributableXDEFI);
     }
 
     function _withdrawableGiven(uint96 units_, uint88 depositedXDEFI_, int256 pointsCorrection_) internal view returns (uint256 withdrawableXDEFI_) {
