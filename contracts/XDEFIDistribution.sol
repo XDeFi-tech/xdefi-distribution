@@ -14,6 +14,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         uint96 units;  // 240,000,000,000,000,000,000,000,000 XDEFI * 100x bonus (which fits in a uint96).
         uint88 depositedXDEFI; // XDEFI cap is 240000000000000000000000000 (which fits in a uint88).
         uint32 expiry;  // block timestamps for the next 50 years (which fits in a uint32).
+        uint32 created;
         int256 pointsCorrection;
     }
 
@@ -69,6 +70,10 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         pendingOwner = address(0);
     }
 
+    function proposeOwnership(address newOwner_) external onlyOwner {
+        emit OwnershipProposed(owner, pendingOwner = newOwner_);
+    }
+
     function setBaseURI(string memory baseURI_) external onlyOwner {
         baseURI = baseURI_;
     }
@@ -82,18 +87,9 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         }
     }
 
-    function proposeOwnership(address newOwner_) external onlyOwner {
-        emit OwnershipProposed(owner, pendingOwner = newOwner_);
-    }
-
     /**********************/
     /* Position Functions */
     /**********************/
-
-    function withdrawableOf(uint256 tokenId_) public view returns (uint256 withdrawableXDEFI_) {
-        Position storage position = positionOf[tokenId_];
-        return _withdrawableGiven(position.units, position.depositedXDEFI, position.pointsCorrection);
-    }
 
     function lock(uint256 amount_, uint256 duration_, address destination_) external noReenter returns (uint256 tokenId_) {
         // Lock the XDEFI in the contract.
@@ -154,6 +150,11 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         _pointsPerUnit += ((newXDEFI * _pointsMultiplier) / totalUnitsCached);
 
         emit DistributionUpdated(msg.sender, newXDEFI);
+    }
+
+    function withdrawableOf(uint256 tokenId_) public view returns (uint256 withdrawableXDEFI_) {
+        Position storage position = positionOf[tokenId_];
+        return _withdrawableGiven(position.units, position.depositedXDEFI, position.pointsCorrection);
     }
 
     /****************************/
@@ -266,6 +267,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
                 units: units,
                 depositedXDEFI: uint88(amount_),
                 expiry: uint32(block.timestamp + duration_),
+                created: uint32(block.timestamp),
                 pointsCorrection: -_toInt256Safe(_pointsPerUnit * units)
             });
 

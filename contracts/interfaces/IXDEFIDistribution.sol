@@ -35,7 +35,7 @@ interface IXDEFIDistribution {
     function totalUnits() external view returns (uint256 totalUnits_);
 
     /// @notice Returns the position details (`pointsCorrection_` is a value used in the amortized work pattern for token distribution).
-    function positionOf(uint256 id_) external view returns (uint96 units_, uint88 depositedXDEFI_, uint32 expiry_, int256 pointsCorrection_);
+    function positionOf(uint256 id_) external view returns (uint96 units_, uint88 depositedXDEFI_, uint32 expiry_, uint32 created_, int256 pointsCorrection_);
 
     /// @notice The multiplier applied to the deposited XDEFI amount to determine the units of a position, and thus its share of future distributions.
     function bonusMultiplierOf(uint256 duration_) external view returns (uint256 bonusMultiplier_);
@@ -56,21 +56,18 @@ interface IXDEFIDistribution {
     /// @notice Allows the `pendingOwner` to take ownership of the contract.
     function acceptOwnership() external;
 
+    /// @notice Allows the owner to propose a new owner for the contract.
+    function proposeOwnership(address newOwner_) external;
+
     /// @notice Sets the base URI for NFT metadata.
     function setBaseURI(string memory baseURI_) external;
 
     /// @notice Allows the setting or un-setting (when the multiplier is 0) of multipliers for lock durations. Scaled such that 1x is 100.
     function setLockPeriods(uint256[] memory durations_, uint256[] memory multipliers) external;
 
-    /// @notice Allows the owner to propose a new owner for the contract.
-    function proposeOwnership(address newOwner_) external;
-
     /**********************/
     /* Position Functions */
     /**********************/
-
-    /// @notice Returns the amount of XDEFI that can be withdrawn when the position is unlocked. This will increase as distributions are made.
-    function withdrawableOf(uint256 tokenId_) external view returns (uint256 withdrawableXDEFI_);
 
     /// @notice Locks some amount of XDEFI into a non-fungible (NFT) position, for a duration of time. The caller must first approve this contract to spend its XDEFI.
     function lock(uint256 amount_, uint256 duration_, address destination_) external returns (uint256 tokenId_);
@@ -86,6 +83,9 @@ interface IXDEFIDistribution {
 
     /// @notice To be called as part of distributions to force the contract to recognize recently transferred XDEFI as distributable.
     function updateDistribution() external;
+
+    /// @notice Returns the amount of XDEFI that can be withdrawn when the position is unlocked. This will increase as distributions are made.
+    function withdrawableOf(uint256 tokenId_) external view returns (uint256 withdrawableXDEFI_);
 
     /****************************/
     /* Batch Position Functions */
