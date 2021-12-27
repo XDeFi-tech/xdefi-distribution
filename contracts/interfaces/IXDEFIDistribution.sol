@@ -6,6 +6,15 @@ import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensio
 
 interface IXDEFIDistribution is IERC721Enumerable {
 
+    struct Position {
+        uint96 units;  // 240,000,000,000,000,000,000,000,000 XDEFI * 100x bonus (which fits in a uint96).
+        uint88 depositedXDEFI; // XDEFI cap is 240000000000000000000000000 (which fits in a uint88).
+        uint32 expiry;  // block timestamps for the next 50 years (which fits in a uint32).
+        uint32 created;
+        uint8 bonusMultiplier;
+        int256 pointsCorrection;
+    }
+
     /// @notice Emitted when owner proposed an account that can accept ownership.
     event OwnershipProposed(address indexed owner, address indexed pendingOwner);
 
@@ -13,7 +22,7 @@ interface IXDEFIDistribution is IERC721Enumerable {
     event OwnershipAccepted(address indexed previousOwner, address indexed owner);
 
     /// @notice Emitted when a new lock period duration, in seconds, has been enabled with some bonus multiplier (scaled by 100, 0 signaling it is disabled).
-    event LockPeriodSet(uint256 duration, uint256 bonusMultiplier);
+    event LockPeriodSet(uint256 duration, uint8 bonusMultiplier);
 
     /// @notice Emitted when a new locked position is created for some amount of XDEFI, and the NFT is minted to an owner.
     event LockPositionCreated(uint256 indexed tokenId, address indexed owner, uint256 amount, uint256 duration);
@@ -37,10 +46,10 @@ interface IXDEFIDistribution is IERC721Enumerable {
     function totalUnits() external view returns (uint256 totalUnits_);
 
     /// @notice Returns the position details (`pointsCorrection_` is a value used in the amortized work pattern for token distribution).
-    function positionOf(uint256 id_) external view returns (uint96 units_, uint88 depositedXDEFI_, uint32 expiry_, uint32 created_, int256 pointsCorrection_);
+    function positionOf(uint256 id_) external view returns (uint96 units_, uint88 depositedXDEFI_, uint32 expiry_, uint32 created_, uint8 bonusMultiplier_, int256 pointsCorrection_);
 
     /// @notice The multiplier applied to the deposited XDEFI amount to determine the units of a position, and thus its share of future distributions.
-    function bonusMultiplierOf(uint256 duration_) external view returns (uint256 bonusMultiplier_);
+    function bonusMultiplierOf(uint256 duration_) external view returns (uint8 bonusMultiplier_);
 
     /// @notice The base URI for NFT metadata.
     function baseURI() external view returns (string memory baseURI_);
@@ -65,7 +74,7 @@ interface IXDEFIDistribution is IERC721Enumerable {
     function setBaseURI(string memory baseURI_) external;
 
     /// @notice Allows the setting or un-setting (when the multiplier is 0) of multipliers for lock durations. Scaled such that 1x is 100.
-    function setLockPeriods(uint256[] memory durations_, uint256[] memory multipliers) external;
+    function setLockPeriods(uint256[] memory durations_, uint8[] memory multipliers) external;
 
     /**********************/
     /* Position Functions */
@@ -77,10 +86,10 @@ interface IXDEFIDistribution is IERC721Enumerable {
     /// @notice Locks some amount of XDEFI into a non-fungible (NFT) position, for a duration of time, with a signed permit to transfer XDEFI from the caller.
     function lockWithPermit(uint256 amount_, uint256 duration_, address destination_, uint256 deadline_, uint8 v_, bytes32 r_, bytes32 s_) external returns (uint256 tokenId_);
 
-    /// @notice Unlock an unlockable non-fungible position and re-lock some amount, for a duration of time, sending the balance XDEFI to some destination.
+    /// @notice Unlock an un-lockable non-fungible position and re-lock some amount, for a duration of time, sending the balance XDEFI to some destination.
     function relock(uint256 tokenId_, uint256 lockAmount_, uint256 duration_, address destination_) external returns (uint256 amountUnlocked_, uint256 newTokenId_);
 
-    /// @notice Unlock an unlockable non-fungible position, sending the XDEFI to some destination.
+    /// @notice Unlock an un-lockable non-fungible position, sending the XDEFI to some destination.
     function unlock(uint256 tokenId_, address destination_) external returns (uint256 amountUnlocked_);
 
     /// @notice To be called as part of distributions to force the contract to recognize recently transferred XDEFI as distributable.
@@ -93,10 +102,10 @@ interface IXDEFIDistribution is IERC721Enumerable {
     /* Batch Position Functions */
     /****************************/
 
-    /// @notice Unlocks several unlockable non-fungible positions and re-lock some amount, for a duration of time, sending the balance XDEFI to some destination.
+    /// @notice Unlocks several un-lockable non-fungible positions and re-lock some amount, for a duration of time, sending the balance XDEFI to some destination.
     function relockBatch(uint256[] memory tokenIds_, uint256 lockAmount_, uint256 duration_, address destination_) external returns (uint256 amountUnlocked_, uint256 newTokenId_);
 
-    /// @notice Unlocks several unlockable non-fungible positions, sending the XDEFI to some destination.
+    /// @notice Unlocks several un-lockable non-fungible positions, sending the XDEFI to some destination.
     function unlockBatch(uint256[] memory tokenIds_, address destination_) external returns (uint256 amountUnlocked_);
 
     /*****************/

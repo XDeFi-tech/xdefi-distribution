@@ -10,14 +10,6 @@ import { IXDEFIDistribution } from "./interfaces/IXDEFIDistribution.sol";
 
 contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
-    struct Position {
-        uint96 units;  // 240,000,000,000,000,000,000,000,000 XDEFI * 100x bonus (which fits in a uint96).
-        uint88 depositedXDEFI; // XDEFI cap is 240000000000000000000000000 (which fits in a uint88).
-        uint32 expiry;  // block timestamps for the next 50 years (which fits in a uint32).
-        uint32 created;
-        int256 pointsCorrection;
-    }
-
     // See https://github.com/ethereum/EIPs/issues/1726#issuecomment-472352728
     uint256 constant internal _pointsMultiplier = uint256(2**128);
     uint256 internal _pointsPerUnit;
@@ -30,7 +22,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     mapping(uint256 => Position) public positionOf;
 
-    mapping(uint256 => uint256) public bonusMultiplierOf;  // Scaled by 100, so 1.1 is 110.
+    mapping(uint256 => uint8) public bonusMultiplierOf;  // Scaled by 100, so 1.1 is 110.
 
     uint256 constant internal zeroDurationPointBase = uint256(100);
 
@@ -78,7 +70,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         baseURI = baseURI_;
     }
 
-    function setLockPeriods(uint256[] memory durations_, uint256[] memory multipliers) external onlyOwner {
+    function setLockPeriods(uint256[] memory durations_, uint8[] memory multipliers) external onlyOwner {
         uint256 count = durations_.length;
 
         for (uint256 i; i < count; ++i) {
@@ -247,11 +239,11 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     function _lock(uint256 amount_, uint256 duration_, address destination_) internal returns (uint256 tokenId_) {
         // Prevent locking 0 amount in order generate many score-less NFTs, even if it is inefficient, and such NFTs would be ignored.
-        require(amount_ != uint256(0), "INVALID_AMOUNT");
+        require(amount_ != uint256(0) && amount_ <= type(uint88).max, "INVALID_AMOUNT");
 
         // Get bonus multiplier and check that it is not zero (which validates the duration).
-        uint256 bonusMultiplier = bonusMultiplierOf[duration_];
-        require(bonusMultiplier != uint256(0), "INVALID_DURATION");
+        uint8 bonusMultiplier = bonusMultiplierOf[duration_];
+        require(bonusMultiplier != uint8(0), "INVALID_DURATION");
 
         // Mint a locked staked position NFT to the destination.
         _safeMint(destination_, tokenId_ = _generateNewTokenId(_getPoints(amount_, duration_)));
@@ -260,7 +252,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         totalDepositedXDEFI += amount_;
 
         // Create Position.
-        uint96 units = uint96((amount_ * bonusMultiplier) / uint256(100));
+        uint96 units = uint96((amount_ * uint256(bonusMultiplier)) / uint256(100));
         totalUnits += units;
         positionOf[tokenId_] =
             Position({
@@ -268,6 +260,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
                 depositedXDEFI: uint88(amount_),
                 expiry: uint32(block.timestamp + duration_),
                 created: uint32(block.timestamp),
+                bonusMultiplier: bonusMultiplier,
                 pointsCorrection: -_toInt256Safe(_pointsPerUnit * units)
             });
 
