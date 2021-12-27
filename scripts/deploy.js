@@ -8,9 +8,13 @@ async function main() {
     console.log("Account balance:", (await deployer.getBalance()).toString());
     console.log("Token address:", xdefi);
 
-    XDEFIDistribution = await (await (await ethers.getContractFactory("XDEFIDistribution")).deploy(xdefi, baseURI)).deployed();
+    const XDEFIDistribution = await (await (await ethers.getContractFactory("XDEFIDistribution")).deploy(xdefi, baseURI)).deployed();
 
     console.log("XDEFIDistribution address:", XDEFIDistribution.address);
+
+    const XDEFIDistributionHelper = await (await (await ethers.getContractFactory("XDEFIDistributionHelper")).deploy()).deployed();
+
+    console.log("XDEFIDistributionHelper address:", XDEFIDistributionHelper.address);
 }
 
 main()

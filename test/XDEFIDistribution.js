@@ -720,7 +720,7 @@ describe("XDEFIDistribution", () => {
         const nft2 = (await XDEFIDistribution.tokenOfOwnerByIndex(account2.address, 0)).toString();
         await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
 
-        // Position 3 locks
+        // Position 3 locks and is transferred to account 1
         await (await XDEFI.connect(account3).approve(XDEFIDistribution.address, toWei(1000))).wait();
         await (await XDEFIDistribution.connect(account3).lock(toWei(1000), 0, account3.address)).wait();
         const nft3 = (await XDEFIDistribution.tokenOfOwnerByIndex(account3.address, 0)).toString();
@@ -770,7 +770,7 @@ describe("XDEFIDistribution", () => {
         const nft2 = (await XDEFIDistribution.tokenOfOwnerByIndex(account2.address, 0)).toString();
         await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
 
-        // Position 3 locks
+        // Position 3 locks and is transferred to account 1
         await (await XDEFI.connect(account3).approve(XDEFIDistribution.address, toWei(1000))).wait();
         await (await XDEFIDistribution.connect(account3).lock(toWei(1000), 172800, account3.address)).wait();
         const nft3 = (await XDEFIDistribution.tokenOfOwnerByIndex(account3.address, 0)).toString();
@@ -821,7 +821,7 @@ describe("XDEFIDistribution", () => {
         const nft2 = (await XDEFIDistribution.tokenOfOwnerByIndex(account2.address, 0)).toString();
         await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
 
-        // Position 3 locks
+        // Position 3 locks and is transferred to account 1
         await (await XDEFI.connect(account3).approve(XDEFIDistribution.address, toWei(1000))).wait();
         await (await XDEFIDistribution.connect(account3).lock(toWei(1000), 172800, account3.address)).wait();
         const nft3 = (await XDEFIDistribution.tokenOfOwnerByIndex(account3.address, 0)).toString();
@@ -876,7 +876,7 @@ describe("XDEFIDistribution", () => {
         const nft2 = (await XDEFIDistribution.tokenOfOwnerByIndex(account2.address, 0)).toString();
         await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
 
-        // Position 3 locks
+        // Position 3 locks and is transferred to account 1
         await (await XDEFI.connect(account3).approve(XDEFIDistribution.address, toWei(1000))).wait();
         await (await XDEFIDistribution.connect(account3).lock(toWei(1000), 172800, account3.address)).wait();
         const nft3 = (await XDEFIDistribution.tokenOfOwnerByIndex(account3.address, 0)).toString();
@@ -954,7 +954,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.pointsOf(nft2)).to.equal(pointsOfPosition2);
         await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
 
-        // Position 3 locks
+        // Position 3 locks and is transferred to account 1
         const pointsOfPosition3 = (await XDEFIDistribution.getPoints(toWei(1000), 172800)).toString();
         await (await XDEFI.connect(account3).approve(XDEFIDistribution.address, toWei(1000))).wait();
         await (await XDEFIDistribution.connect(account3).lock(toWei(1000), 172800, account3.address)).wait();
@@ -1011,7 +1011,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.pointsOf(nft2)).to.equal(pointsOfPosition2);
         await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
 
-        // Position 3 locks
+        // Position 3 locks and is transferred to account 1
         const pointsOfPosition3 = (await XDEFIDistribution.getPoints(toWei(1000), 172800)).toString();
         await (await XDEFI.connect(account3).approve(XDEFIDistribution.address, toWei(1000))).wait();
         await (await XDEFIDistribution.connect(account3).lock(toWei(1000), 172800, account3.address)).wait();
