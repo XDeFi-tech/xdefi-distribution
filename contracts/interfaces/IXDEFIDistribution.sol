@@ -2,7 +2,9 @@
 
 pragma solidity ^0.8.10;
 
-interface IXDEFIDistribution {
+import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
+
+interface IXDEFIDistribution is IERC721Enumerable {
 
     /// @notice Emitted when owner proposed an account that can accept ownership.
     event OwnershipProposed(address indexed owner, address indexed pendingOwner);
