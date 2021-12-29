@@ -9,7 +9,8 @@
     "deploy:ropsten": "hardhat run scripts/deploy.js --network ropsten",
     "deploy:rinkeby": "hardhat run scripts/deploy.js --network rinkeby",
     "deploy:mainnet": "hardhat run scripts/deploy.js --network mainnet",
-    "deploy:ganache": "hardhat run scripts/deploy.js --network ganache"
+    "deploy:ganache": "hardhat run scripts/deploy.js --network ganache",
+    "server": "node ./backend/index.js"
   },
   "keywords": [],
   "author": "",

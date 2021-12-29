@@ -44,3 +44,5 @@ Ensure a `./secrets.json` exists with:
 ```
 
 Deploy with `npm run deploy:networkName`, where `networkName` is the name of the network (i.e. `ropsten`, `mainnet`, etc).
+
+Run sample backend NFT server with `npm run server`.
