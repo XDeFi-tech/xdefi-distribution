@@ -345,7 +345,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.withdrawableOf(nft2)).to.equal(toWei(1000));
         expect(await XDEFIDistribution.withdrawableOf(nft3)).to.equal(toWei(1000));
 
-        // Position 1 re-locks a 500
+        // Position 1 re-locks 500
         await (await XDEFIDistribution.connect(account1).relock(nft1, toWei(500), 0, account1.address)).wait();
         expect(await XDEFI.balanceOf(account1.address)).to.equal(toWei(500));
         expect((await XDEFIDistribution.positionOf(nft1)).units).to.equal(toWei(0));
@@ -353,7 +353,7 @@ describe("XDEFIDistribution", () => {
         const nft4 = (await XDEFIDistribution.tokenOfOwnerByIndex(account1.address, 1)).toString();
         expect((await XDEFIDistribution.positionOf(nft4)).units).to.equal(toWei(500));
 
-        // Position 2 re-locks a 250
+        // Position 2 re-locks 250
         await (await XDEFIDistribution.connect(account2).relock(nft2, toWei(250), 0, account2.address)).wait();
         expect(await XDEFI.balanceOf(account2.address)).to.equal(toWei(750));
         expect((await XDEFIDistribution.positionOf(nft2)).units).to.equal(toWei(0));
@@ -361,25 +361,25 @@ describe("XDEFIDistribution", () => {
         const nft5 = (await XDEFIDistribution.tokenOfOwnerByIndex(account2.address, 1)).toString();
         expect((await XDEFIDistribution.positionOf(nft5)).units).to.equal(toWei(250));
 
-        // Position 3 re-locks a 100
-        await (await XDEFIDistribution.connect(account3).relock(nft3, toWei(100), 0, account3.address)).wait();
-        expect(await XDEFI.balanceOf(account3.address)).to.equal(toWei(900));
+        // Position 3 re-locks all
+        await (await XDEFIDistribution.connect(account3).relock(nft3, toWei(1000), 0, account3.address)).wait();
+        expect(await XDEFI.balanceOf(account3.address)).to.equal(toWei(0));
         expect((await XDEFIDistribution.positionOf(nft3)).units).to.equal(toWei(0));
         expect(await XDEFIDistribution.balanceOf(account3.address)).to.equal('2');
         const nft6 = (await XDEFIDistribution.tokenOfOwnerByIndex(account3.address, 1)).toString();
-        expect((await XDEFIDistribution.positionOf(nft6)).units).to.equal(toWei(100));
+        expect((await XDEFIDistribution.positionOf(nft6)).units).to.equal(toWei(1000));
 
         // Check contract values
-        expect(await XDEFI.balanceOf(XDEFIDistribution.address)).to.equal(toWei(850));
+        expect(await XDEFI.balanceOf(XDEFIDistribution.address)).to.equal(toWei(1750));
         expect(await XDEFIDistribution.distributableXDEFI()).to.equal(toWei(0));
-        expect(await XDEFIDistribution.totalDepositedXDEFI()).to.equal(toWei(850));
-        expect(await XDEFIDistribution.totalUnits()).to.equal(toWei(850));
+        expect(await XDEFIDistribution.totalDepositedXDEFI()).to.equal(toWei(1750));
+        expect(await XDEFIDistribution.totalUnits()).to.equal(toWei(1750));
         expect(await XDEFIDistribution.totalSupply()).to.equal(6);
 
         // Check withdrawable
         expect(await XDEFIDistribution.withdrawableOf(nft4)).to.equal(toWei(500));
         expect(await XDEFIDistribution.withdrawableOf(nft5)).to.equal(toWei(250));
-        expect(await XDEFIDistribution.withdrawableOf(nft6)).to.equal(toWei(100));
+        expect(await XDEFIDistribution.withdrawableOf(nft6)).to.equal(toWei(1000));
     });
 
     it("Can enter and re-lock deposited amounts with no distributions (varied bonuses)", async () => {
@@ -419,7 +419,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.withdrawableOf(nft2)).to.equal(toWei(1000));
         expect(await XDEFIDistribution.withdrawableOf(nft3)).to.equal(toWei(1000));
 
-        // Position 1 re-locks a 500
+        // Position 1 re-locks 500
         await (await XDEFIDistribution.connect(account1).relock(nft1, toWei(500), 0, account1.address)).wait();
         expect(await XDEFI.balanceOf(account1.address)).to.equal(toWei(500));
         expect((await XDEFIDistribution.positionOf(nft1)).units).to.equal(toWei(0));
@@ -427,7 +427,7 @@ describe("XDEFIDistribution", () => {
         const nft4 = (await XDEFIDistribution.tokenOfOwnerByIndex(account1.address, 1)).toString();
         expect((await XDEFIDistribution.positionOf(nft4)).units).to.equal(toWei(500));
 
-        // Position 2 re-locks a 250
+        // Position 2 re-locks 250
         await hre.ethers.provider.send('evm_increaseTime', [86400]);
         await (await XDEFIDistribution.connect(account2).relock(nft2, toWei(250), 0, account2.address)).wait();
         expect(await XDEFI.balanceOf(account2.address)).to.equal(toWei(750));
@@ -436,26 +436,26 @@ describe("XDEFIDistribution", () => {
         const nft5 = (await XDEFIDistribution.tokenOfOwnerByIndex(account2.address, 1)).toString();
         expect((await XDEFIDistribution.positionOf(nft5)).units).to.equal(toWei(250));
 
-        // Position 3 re-locks a 100
+        // Position 3 re-locks 100
         await hre.ethers.provider.send('evm_increaseTime', [86400]);
-        await (await XDEFIDistribution.connect(account3).relock(nft3, toWei(100), 0, account3.address)).wait();
-        expect(await XDEFI.balanceOf(account3.address)).to.equal(toWei(900));
+        await (await XDEFIDistribution.connect(account3).relock(nft3, toWei(1000), 0, account3.address)).wait();
+        expect(await XDEFI.balanceOf(account3.address)).to.equal(toWei(0));
         expect((await XDEFIDistribution.positionOf(nft3)).units).to.equal(toWei(0));
         expect(await XDEFIDistribution.balanceOf(account3.address)).to.equal('2');
         const nft6 = (await XDEFIDistribution.tokenOfOwnerByIndex(account3.address, 1)).toString();
-        expect((await XDEFIDistribution.positionOf(nft6)).units).to.equal(toWei(100));
+        expect((await XDEFIDistribution.positionOf(nft6)).units).to.equal(toWei(1000));
 
         // Check contract values
-        expect(await XDEFI.balanceOf(XDEFIDistribution.address)).to.equal(toWei(850));
+        expect(await XDEFI.balanceOf(XDEFIDistribution.address)).to.equal(toWei(1750));
         expect(await XDEFIDistribution.distributableXDEFI()).to.equal(toWei(0));
-        expect(await XDEFIDistribution.totalDepositedXDEFI()).to.equal(toWei(850));
-        expect(await XDEFIDistribution.totalUnits()).to.equal(toWei(850));
+        expect(await XDEFIDistribution.totalDepositedXDEFI()).to.equal(toWei(1750));
+        expect(await XDEFIDistribution.totalUnits()).to.equal(toWei(1750));
         expect(await XDEFIDistribution.totalSupply()).to.equal(6);
 
         // Check withdrawable
         expect(await XDEFIDistribution.withdrawableOf(nft4)).to.equal(toWei(500));
         expect(await XDEFIDistribution.withdrawableOf(nft5)).to.equal(toWei(250));
-        expect(await XDEFIDistribution.withdrawableOf(nft6)).to.equal(toWei(100));
+        expect(await XDEFIDistribution.withdrawableOf(nft6)).to.equal(toWei(1000));
     });
 
     it("Can enter and re-lock staggered portions of distributions (no bonuses)", async () => {
@@ -720,7 +720,7 @@ describe("XDEFIDistribution", () => {
         const nft2 = (await XDEFIDistribution.tokenOfOwnerByIndex(account2.address, 0)).toString();
         await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
 
-        // Position 3 locks
+        // Position 3 locks and is transferred to account 1
         await (await XDEFI.connect(account3).approve(XDEFIDistribution.address, toWei(1000))).wait();
         await (await XDEFIDistribution.connect(account3).lock(toWei(1000), 0, account3.address)).wait();
         const nft3 = (await XDEFIDistribution.tokenOfOwnerByIndex(account3.address, 0)).toString();
@@ -770,7 +770,7 @@ describe("XDEFIDistribution", () => {
         const nft2 = (await XDEFIDistribution.tokenOfOwnerByIndex(account2.address, 0)).toString();
         await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
 
-        // Position 3 locks
+        // Position 3 locks and is transferred to account 1
         await (await XDEFI.connect(account3).approve(XDEFIDistribution.address, toWei(1000))).wait();
         await (await XDEFIDistribution.connect(account3).lock(toWei(1000), 172800, account3.address)).wait();
         const nft3 = (await XDEFIDistribution.tokenOfOwnerByIndex(account3.address, 0)).toString();
@@ -821,7 +821,7 @@ describe("XDEFIDistribution", () => {
         const nft2 = (await XDEFIDistribution.tokenOfOwnerByIndex(account2.address, 0)).toString();
         await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
 
-        // Position 3 locks
+        // Position 3 locks and is transferred to account 1
         await (await XDEFI.connect(account3).approve(XDEFIDistribution.address, toWei(1000))).wait();
         await (await XDEFIDistribution.connect(account3).lock(toWei(1000), 172800, account3.address)).wait();
         const nft3 = (await XDEFIDistribution.tokenOfOwnerByIndex(account3.address, 0)).toString();
@@ -876,7 +876,7 @@ describe("XDEFIDistribution", () => {
         const nft2 = (await XDEFIDistribution.tokenOfOwnerByIndex(account2.address, 0)).toString();
         await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
 
-        // Position 3 locks
+        // Position 3 locks and is transferred to account 1
         await (await XDEFI.connect(account3).approve(XDEFIDistribution.address, toWei(1000))).wait();
         await (await XDEFIDistribution.connect(account3).lock(toWei(1000), 172800, account3.address)).wait();
         const nft3 = (await XDEFIDistribution.tokenOfOwnerByIndex(account3.address, 0)).toString();
@@ -938,6 +938,80 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.withdrawableOf(nft4)).to.equal(toWei(0));
     });
 
+    it("Can enter and batch relock all with distributions (varied bonuses)", async () => {
+        // Position 1 locks
+        await (await XDEFI.connect(account1).approve(XDEFIDistribution.address, toWei(1000))).wait();
+        await (await XDEFIDistribution.connect(account1).lock(toWei(1000), 0, account1.address)).wait();
+        const nft1 = (await XDEFIDistribution.tokenOfOwnerByIndex(account1.address, 0)).toString();
+
+        // Position 2 locks and is transferred to account 1
+        await (await XDEFI.connect(account2).approve(XDEFIDistribution.address, toWei(1000))).wait();
+        await (await XDEFIDistribution.connect(account2).lock(toWei(1000), 86400, account2.address)).wait();
+        const nft2 = (await XDEFIDistribution.tokenOfOwnerByIndex(account2.address, 0)).toString();
+        await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
+
+        // Position 3 locks and is transferred to account 1
+        await (await XDEFI.connect(account3).approve(XDEFIDistribution.address, toWei(1000))).wait();
+        await (await XDEFIDistribution.connect(account3).lock(toWei(1000), 172800, account3.address)).wait();
+        const nft3 = (await XDEFIDistribution.tokenOfOwnerByIndex(account3.address, 0)).toString();
+        await (await XDEFIDistribution.connect(account3).transferFrom(account3.address, account1.address, nft3)).wait();
+
+        // First distribution (should split between position 1, 2, and 3)
+        await (await XDEFI.transfer(XDEFIDistribution.address, toWei(1000))).wait();
+        await (await XDEFIDistribution.updateDistribution()).wait();
+
+        // Check contract values
+        expect(await XDEFI.balanceOf(XDEFIDistribution.address)).to.equal(toWei(4000));
+        expect(await XDEFIDistribution.distributableXDEFI()).to.equal(toWei(1000));
+        expect(await XDEFIDistribution.totalDepositedXDEFI()).to.equal(toWei(3000));
+        expect(await XDEFIDistribution.totalUnits()).to.equal(toWei(3700));
+        expect(await XDEFIDistribution.totalSupply()).to.equal(3);
+
+        // Check withdrawable
+        expect(await XDEFIDistribution.withdrawableOf(nft1)).to.equal(toWei(1270, '270270270270270270', 0));
+        expect(await XDEFIDistribution.withdrawableOf(nft2)).to.equal(toWei(1324, '324324324324324324', 0));
+        expect(await XDEFIDistribution.withdrawableOf(nft3)).to.equal(toWei(1405, '405405405405405405', 0));
+
+        // Position 1, 2, and 3 relock all
+        await hre.ethers.provider.send('evm_increaseTime', [172800]);
+        await (await XDEFIDistribution.connect(account1).relockBatch([nft1, nft2, nft3], toWei(4000, 0, 1), 172800, account1.address)).wait();
+        const nft4 = (await XDEFIDistribution.tokenOfOwnerByIndex(account1.address, 3)).toString();
+        expect(await XDEFI.balanceOf(account1.address)).to.equal(toWei(0));
+        expect((await XDEFIDistribution.positionOf(nft1)).units).to.equal(toWei(0));
+        expect((await XDEFIDistribution.positionOf(nft2)).units).to.equal(toWei(0));
+        expect((await XDEFIDistribution.positionOf(nft3)).units).to.equal(toWei(0));
+        expect((await XDEFIDistribution.positionOf(nft4)).units).to.equal(toWei(6000, 0, 2));
+
+        // Second distribution (should all for position 4)
+        await (await XDEFI.transfer(XDEFIDistribution.address, toWei(1000))).wait();
+        await (await XDEFIDistribution.updateDistribution()).wait();
+
+        // Check withdrawable
+        expect(await XDEFIDistribution.withdrawableOf(nft1)).to.equal(toWei(0));
+        expect(await XDEFIDistribution.withdrawableOf(nft2)).to.equal(toWei(0));
+        expect(await XDEFIDistribution.withdrawableOf(nft3)).to.equal(toWei(0));
+        expect(await XDEFIDistribution.withdrawableOf(nft4)).to.equal(toWei(5000, 0, 2));
+
+        // Position 4 unlocks
+        await hre.ethers.provider.send('evm_increaseTime', [172800]);
+        await (await XDEFIDistribution.connect(account1).unlock(nft4, account1.address)).wait();
+        expect(await XDEFI.balanceOf(account1.address)).to.equal(toWei(5000, 0, 2));
+        expect((await XDEFIDistribution.positionOf(nft4)).units).to.equal(toWei(0));
+
+        // Check contract values
+        expect(await XDEFI.balanceOf(XDEFIDistribution.address)).to.equal(toWei(0, 2, 0));
+        expect(await XDEFIDistribution.distributableXDEFI()).to.equal(toWei(0, 2, 0));
+        expect(await XDEFIDistribution.totalDepositedXDEFI()).to.equal(toWei(0));
+        expect(await XDEFIDistribution.totalUnits()).to.equal(toWei(0));
+        expect(await XDEFIDistribution.totalSupply()).to.equal(4);
+
+        // Check withdrawable
+        expect(await XDEFIDistribution.withdrawableOf(nft1)).to.equal(toWei(0));
+        expect(await XDEFIDistribution.withdrawableOf(nft2)).to.equal(toWei(0));
+        expect(await XDEFIDistribution.withdrawableOf(nft3)).to.equal(toWei(0));
+        expect(await XDEFIDistribution.withdrawableOf(nft4)).to.equal(toWei(0));
+    });
+
     it("Can merge and transfer unlocked positions", async () => {
         // Position 1 locks
         const pointsOfPosition1 = (await XDEFIDistribution.getPoints(toWei(1000), 0)).toString();
@@ -954,7 +1028,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.pointsOf(nft2)).to.equal(pointsOfPosition2);
         await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
 
-        // Position 3 locks
+        // Position 3 locks and is transferred to account 1
         const pointsOfPosition3 = (await XDEFIDistribution.getPoints(toWei(1000), 172800)).toString();
         await (await XDEFI.connect(account3).approve(XDEFIDistribution.address, toWei(1000))).wait();
         await (await XDEFIDistribution.connect(account3).lock(toWei(1000), 172800, account3.address)).wait();
@@ -1011,7 +1085,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.pointsOf(nft2)).to.equal(pointsOfPosition2);
         await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
 
-        // Position 3 locks
+        // Position 3 locks and is transferred to account 1
         const pointsOfPosition3 = (await XDEFIDistribution.getPoints(toWei(1000), 172800)).toString();
         await (await XDEFI.connect(account3).approve(XDEFIDistribution.address, toWei(1000))).wait();
         await (await XDEFIDistribution.connect(account3).lock(toWei(1000), 172800, account3.address)).wait();

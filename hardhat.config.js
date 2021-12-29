@@ -1,10 +1,8 @@
 require("@nomiclabs/hardhat-waffle");
 require("hardhat-gas-reporter");
 require('solidity-coverage');
+const secrets = require('./.secrets.json');
 
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
 module.exports = {
     solidity: {
         version: "0.8.10",
@@ -35,9 +33,18 @@ module.exports = {
     networks: {
         hardhat: {},
         ropsten: {
-        url: require('./.secrets.json').ropsten.rpc,
+            url: secrets.ropsten.rpc,
             accounts: {
-                mnemonic: require('./.secrets.json').ropsten.mnemonic,
+                mnemonic: secrets.ropsten.mnemonic,
+                path: "m/44'/60'/0'/0",
+                initialIndex: 0,
+                count: 1,
+            },
+        },
+        ganache: {
+            url: secrets.ganache.rpc,
+            accounts: {
+                mnemonic: secrets.ropsten.mnemonic,
                 path: "m/44'/60'/0'/0",
                 initialIndex: 0,
                 count: 1,

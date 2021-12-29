@@ -112,8 +112,12 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         // Handle the lock position creation and get the tokenId of the locked position.
         newTokenId_ = _lock(lockAmount_, duration_, destination_);
 
-        // Send the excess XDEFI to the destination.
-        SafeERC20.safeTransfer(IERC20(XDEFI), destination_, amountUnlocked_ - lockAmount_);
+        uint256 withdrawAmount = amountUnlocked_ - lockAmount_;
+
+        if (withdrawAmount != uint256(0)) {
+            // Send the excess XDEFI to the destination, if needed.
+            SafeERC20.safeTransfer(IERC20(XDEFI), destination_, withdrawAmount);
+        }
 
         // NOTE: This needs to be done after updating `totalDepositedXDEFI` (which happens in `_unlock`) and transferring out.
         _updateXDEFIBalance();
@@ -163,8 +167,12 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         // Handle the lock position creation and get the tokenId of the locked position.
         newTokenId_ = _lock(lockAmount_, duration_, destination_);
 
-        // Send the excess XDEFI to the destination.
-        SafeERC20.safeTransfer(IERC20(XDEFI), destination_, amountUnlocked_ - lockAmount_);
+        uint256 withdrawAmount = amountUnlocked_ - lockAmount_;
+
+        if (withdrawAmount != uint256(0)) {
+            // Send the excess XDEFI to the destination, if needed.
+            SafeERC20.safeTransfer(IERC20(XDEFI), destination_, withdrawAmount);
+        }
 
         // NOTE: This needs to be done after updating `totalDepositedXDEFI` (which happens in `_unlockBatch`) and transferring out.
         _updateXDEFIBalance();

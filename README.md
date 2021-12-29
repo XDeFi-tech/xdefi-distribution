@@ -23,22 +23,24 @@ This contract provides a mechanisms for users to lock XDEFI, resulting in non-fu
 
 Setup with `npm install` or `npm ci`.
 
-Test with `npx hardhat test`.
+Test with `npm run test`.
 
-Coverage with `npx hardhat coverage`.
+Coverage with `npm run coverage`.
 
 Ensure a `./secrets.json` exists with:
 ```json
 {
-    "networkName1": {
+    "ropsten": {
         "mnemonic": "some mnemonic",
         "xdefi": "address of XDEFI token",
         "rpc": "HTTPS RPC URL",
         "baseURI": "Base URI for NFTs"
     },
-    "networkName2": {...},
-    "networkName3": {...}
+    "rinkeby": {...},
+    "mainnet": {...},
+    "ganache": {...},
+    "some-other-network": {...}
 }
 ```
 
-Deploy with `npx hardhat run scripts/deploy.js --network networkName`.
+Deploy with `npm run deploy:networkName`, where `networkName` is the name of the network (i.e. `ropsten`, `mainnet`, etc).
