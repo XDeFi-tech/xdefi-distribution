@@ -56,7 +56,7 @@ describe("XDEFIDistributionHelper", () => {
         expect(await XDEFIDistribution.balanceOf(account1.address)).to.equal(3);
         expect(await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address)).to.deep.equal([nft1, nft2, nft3]);
 
-        XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address)
+        await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address)
             .then(async ({ tokenIds_, positions_, withdrawables_ }) => {
                 expect(tokenIds_).to.deep.equal([nft1, nft2, nft3]);
 
@@ -75,7 +75,7 @@ describe("XDEFIDistributionHelper", () => {
         expect(await XDEFIDistribution.balanceOf(account1.address)).to.equal(3);
         expect(await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address)).to.deep.equal([nft1, nft2, nft3]);
 
-        XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address)
+        await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address)
             .then(async ({ tokenIds_, positions_, withdrawables_ }) => {
                 expect(tokenIds_).to.deep.equal([nft2, nft3]);
 
@@ -94,7 +94,7 @@ describe("XDEFIDistributionHelper", () => {
         expect(await XDEFIDistribution.balanceOf(account1.address)).to.equal(3);
         expect(await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address)).to.deep.equal([nft1, nft2, nft3]);
 
-        XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address)
+        await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address)
             .then(async ({ tokenIds_, positions_, withdrawables_ }) => {
                 expect(tokenIds_).to.deep.equal([nft3]);
 
@@ -112,7 +112,7 @@ describe("XDEFIDistributionHelper", () => {
         expect(await XDEFIDistribution.balanceOf(account1.address)).to.equal(3);
         expect(await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address)).to.deep.equal([nft1, nft2, nft3]);
 
-        XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address)
+        await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address)
             .then(async ({ tokenIds_, positions_, withdrawables_ }) => {
                 expect(tokenIds_).to.deep.equal([]);
 
