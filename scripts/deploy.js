@@ -3,10 +3,13 @@ const hre = require('hardhat');
 async function main() {
     const { xdefi, baseURI } = require('../.secrets.json')[hre.network.name];
     const [deployer] = await ethers.getSigners();
+    const balance = BigInt((await deployer.getBalance()).toString());
 
     console.log("Deploying contracts with the account:", deployer.address);
-    console.log("Account balance:", (await deployer.getBalance()).toString());
+    console.log("Account balance:", balance);
     console.log("Token address:", xdefi);
+
+    if (!balance) return;
 
     const XDEFIDistribution = await (await (await ethers.getContractFactory("XDEFIDistribution")).deploy(xdefi, baseURI)).deployed();
 

@@ -44,7 +44,7 @@ module.exports = {
         ganache: {
             url: secrets.ganache.rpc,
             accounts: {
-                mnemonic: secrets.ropsten.mnemonic,
+                mnemonic: secrets.ganache.mnemonic,
                 path: "m/44'/60'/0'/0",
                 initialIndex: 0,
                 count: 1,
