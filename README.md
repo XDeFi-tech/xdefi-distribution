@@ -1,7 +1,7 @@
 # xdefi-distribution
 
 ## Description
-This contract provides a mechanisms for users to lock XDEFI, resulting in non-fungible locked positions, since each position is only unlockable in its entirety after a certain time from locking. Locked positions have a right to withdraw at least the respective amount of XDEFI deposited, as well as a portion of XDEFI that was airdropped to this contract. This portion is based on the relative portion of locked XDEFI in comparison to all locked XDEFI, and the bonus multiplier of the locked position, which is assigned at lock-time based on the lock duration. Further, the locked and unlocked positions exist as NFTs with a score, in which several can be merged/burned to create new NFTs of a larger score.
+This contract provides a mechanisms for users to lock XDEFI, resulting in non-fungible locked positions, since each position is only un-lockable in its entirety after a certain time from locking. Locked positions have a right to withdraw at least the respective amount of XDEFI deposited, as well as a portion of XDEFI that was airdropped to this contract, and thus dispersed to all locked positions. This portion is based on the relative portion of locked XDEFI in comparison to all locked XDEFI, and the bonus multiplier of the locked position, which is assigned at lock-time based on the lock duration. Further, the locked and unlocked positions exist as NFTs with a score, in which several can be merged/burned to create new NFTs of a larger score.
 
 ## Features and Functionality
 - Users can lock in an amount of XDEFI for a duration and cannot unlock/withdraw during the specified duration
@@ -13,11 +13,26 @@ This contract provides a mechanisms for users to lock XDEFI, resulting in non-fu
 - Rewards are accrued while locked up, with a bonus multiplier based on the lockup time.
 - Accruing of rewards/revenue with the bonus multiplier persists after the lockup time expires. This is fine since the goal is to reward the initial commitment. Further, one would be better off re-locking their withdrawable token, to compound.
 - Upon locking, the NFT locked position is given a “score”, which is some function of amount and lockup time (`amount * duration`).
-- The NFT's score is embedded in the `tokenId`, so the chain enforced it.
+- The NFT's score is embedded in the `tokenId`, so the chain enforces it (first/leftmost 128 bits is the score, last/rightmost 128 bits is a sequential identifier, for uniqueness).
 - The NFT points to some off-chain server that will serve the correct metadata given the NFTs points (i.e. `tokenId`). This is a stateless process off-chain.
 - Once the NFT position has been unlocked and the XDEFI withdrawn, the NFT still exists simply as a transferable loyalty NFT, with its same score, but without any withdrawable XDEFI.
 - Users can combine several of these amount-less loyalty NFTs into one, where the resulting NFT’s points is the sum of those burned to produce it.
 - Contract supports Permit, which avoids the need to do ERC20 approvals for XDEFI locking.
+
+## Contracts
+
+### XDEFIDistribution
+
+This contract contains the standalone logic for locking, unlocking, re-locking, batched unlocking, batched re-locking, and merging, as well as the ERC721Enumerable functionality.
+
+### XDEFIDistributionHelper
+
+This contract is a stateless helper for read-only functionality, intended to help reduce smart contact queries by front-ends/clients, currently supporting:
+- `getAllTokensForAccount`, which returns an array of all tokenIds owned by an account
+- `getAllLockedPositionsForAccount`, which returns:
+    - an array of all tokenIds owned by an account that are still locked
+    - an array of respective locked position info for each tokenId
+    - an array of respective withdrawable amounts for each tokenId
 
 ## Testing and deployment
 
