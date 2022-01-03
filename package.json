@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "compile": "hardhat compile",
     "test": "hardhat test",
     "coverage": "hardhat coverage",
     "deploy:ropsten": "hardhat run scripts/deploy.js --network ropsten",

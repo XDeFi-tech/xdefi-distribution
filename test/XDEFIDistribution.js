@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 
 const totalSupply = '240000000000000000000000000';
 
-const toWei = (value, add = 0, sub = 0) => (BigInt(value) * 1000000000000000000n + BigInt(add) - BigInt(sub)).toString();
+const toWei = (value, add = 0, sub = 0) => (BigInt(value) * 1_000_000_000_000_000_000n + BigInt(add) - BigInt(sub)).toString();
 
 // TODO: Test lockWithPermit
 
@@ -19,7 +19,7 @@ describe("XDEFIDistribution", () => {
         [god, account1, account2, account3] = await ethers.getSigners();
 
         XDEFI = await (await (await ethers.getContractFactory("XDEFI")).deploy("XDEFI", "XDEFI", totalSupply)).deployed();
-        XDEFIDistribution = await (await (await ethers.getContractFactory("XDEFIDistribution")).deploy(XDEFI.address, "https://www.xdefi.io/nfts/")).deployed();
+        XDEFIDistribution = await (await (await ethers.getContractFactory("XDEFIDistribution")).deploy(XDEFI.address, "https://www.xdefi.io/nfts/", 0)).deployed();
 
         // Setup some bonus multipliers (0 days with 1x, 1 day with 1.2x, 2 days with 1.5x)
         await (await XDEFIDistribution.setLockPeriods([0, 86400, 172800], [100, 120, 150])).wait();

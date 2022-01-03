@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.10;
+pragma solidity =0.8.10;
 
 import { IXDEFIDistribution } from "./interfaces/IXDEFIDistribution.sol";
 import { IXDEFIDistributionHelper } from "./interfaces/IXDEFIDistributionHelper.sol";
 
+/// @dev Stateless helper contract for external clients to reduce web3 calls to gather XDEFIDistribution information related to individual accounts.
 contract XDEFIDistributionHelper is IXDEFIDistributionHelper {
 
     function getAllTokensForAccount(address xdefiDistribution_, address account_) public view returns (uint256[] memory tokenIds_) {

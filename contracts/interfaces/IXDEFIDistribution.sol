@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.10;
+pragma solidity =0.8.10;
 
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
@@ -113,7 +113,7 @@ interface IXDEFIDistribution is IERC721Enumerable {
     /*****************/
 
     /// @notice Returns the number of points an NFT will have, given some amount locked for some duration.
-    function getPoints(uint256 amount_, uint256 duration_) external pure returns (uint256 points_);
+    function getPoints(uint256 amount_, uint256 duration_) external view returns (uint256 points_);
 
     /// @notice Burns several unlocked NFTs to mint a new NFT that has their combined points total.
     function merge(uint256[] memory tokenIds_, address destination_) external returns (uint256 tokenId_);

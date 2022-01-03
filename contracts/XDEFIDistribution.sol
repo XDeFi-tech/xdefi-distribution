@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.10;
+pragma solidity =0.8.10;
 
 import { ERC721, ERC721Enumerable, Strings } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -8,10 +8,13 @@ import { IERC20, SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/Saf
 import { IEIP2612 } from "./interfaces/IEIP2612.sol";
 import { IXDEFIDistribution } from "./interfaces/IXDEFIDistribution.sol";
 
+/// @dev Handles distributing XDEFI to NFTs that have locked up XDEFI for various durations of time.
 contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
+    uint88 internal MAX_TOTAL_XDEFI_SUPPLY = uint88(240_000_000_000_000_000_000_000_000);
+
     // See https://github.com/ethereum/EIPs/issues/1726#issuecomment-472352728
-    uint256 constant internal _pointsMultiplier = uint256(2**128);
+    uint256 internal constant _pointsMultiplier = uint256(2**128);
     uint256 internal _pointsPerUnit;
 
     address public immutable XDEFI;
@@ -22,9 +25,9 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     mapping(uint256 => Position) public positionOf;
 
-    mapping(uint256 => uint8) public bonusMultiplierOf;  // Scaled by 100, so 1.1 is 110.
+    mapping(uint256 => uint8) public bonusMultiplierOf;  // Scaled by 100 (i.e. 1.1x is 110, 2.55x is 255).
 
-    uint256 constant internal zeroDurationPointBase = uint256(100);
+    uint256 internal immutable _zeroDurationPointBase;
 
     string public baseURI;
 
@@ -33,10 +36,11 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     uint256 internal _locked;
 
-    constructor (address XDEFI_, string memory baseURI_) ERC721("Locked XDEFI", "lXDEFI") {
+    constructor (address XDEFI_, string memory baseURI_, uint256 zeroDurationPointBase_) ERC721("Locked XDEFI", "lXDEFI") {
         require((XDEFI = XDEFI_) != address(0), "INVALID_TOKEN");
         owner = msg.sender;
         baseURI = baseURI_;
+        _zeroDurationPointBase = zeroDurationPointBase_;
     }
 
     modifier onlyOwner() {
@@ -75,6 +79,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
         for (uint256 i; i < count; ++i) {
             uint256 duration = durations_[i];
+            require(duration <= uint256(18250 days), "INVALID_DURATION");
             emit LockPeriodSet(duration, bonusMultiplierOf[duration] = multipliers[i]);
         }
     }
@@ -193,7 +198,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     /* NFT Functions */
     /*****************/
 
-    function getPoints(uint256 amount_, uint256 duration_) external pure returns (uint256 points_) {
+    function getPoints(uint256 amount_, uint256 duration_) external view returns (uint256 points_) {
         return _getPoints(amount_, duration_);
     }
 
@@ -237,8 +242,8 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         return (points_ << uint256(128)) + uint128(totalSupply() + 1);
     }
 
-    function _getPoints(uint256 amount_, uint256 duration_) internal pure returns (uint256 points_) {
-        return amount_ * (duration_ + zeroDurationPointBase);
+    function _getPoints(uint256 amount_, uint256 duration_) internal view returns (uint256 points_) {
+        return amount_ * (duration_ + _zeroDurationPointBase);
     }
 
     function _getPointsFromTokenId(uint256 tokenId_) internal pure returns (uint256 points_) {
@@ -247,7 +252,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     function _lock(uint256 amount_, uint256 duration_, address destination_) internal returns (uint256 tokenId_) {
         // Prevent locking 0 amount in order generate many score-less NFTs, even if it is inefficient, and such NFTs would be ignored.
-        require(amount_ != uint256(0) && amount_ <= type(uint88).max, "INVALID_AMOUNT");
+        require(amount_ != uint256(0) && amount_ <= MAX_TOTAL_XDEFI_SUPPLY, "INVALID_AMOUNT");
 
         // Get bonus multiplier and check that it is not zero (which validates the duration).
         uint8 bonusMultiplier = bonusMultiplierOf[duration_];
