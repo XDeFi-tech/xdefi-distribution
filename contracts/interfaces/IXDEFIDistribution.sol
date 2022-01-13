@@ -48,10 +48,10 @@ interface IXDEFIDistribution is IERC721Enumerable {
     event EmergencyModeActivated();
 
     /// @notice Emitted when a new lock period duration, in seconds, has been enabled with some bonus multiplier (scaled by 100, 0 signaling it is disabled).
-    event LockPeriodSet(uint256 duration, uint8 bonusMultiplier);
+    event LockPeriodSet(uint256 indexed duration, uint256 indexed bonusMultiplier);
 
     /// @notice Emitted when a new locked position is created for some amount of XDEFI, and the NFT is minted to an owner.
-    event LockPositionCreated(uint256 indexed tokenId, address indexed owner, uint256 amount, uint256 duration);
+    event LockPositionCreated(uint256 indexed tokenId, address indexed owner, uint256 amount, uint256 indexed duration);
 
     /// @notice Emitted when a locked position is unlocked, withdrawing some amount of XDEFI.
     event LockPositionWithdrawn(uint256 indexed tokenId, address indexed owner, uint256 amount);
