@@ -428,7 +428,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     function _unlockBatch(address account_, uint256[] calldata tokenIds_) internal returns (uint256 amountUnlocked_) {
         // Revert if trying to unlock 0 positions, which would result in a successful, yet wasted useless transaction.
-        if (tokenIds_.length == ZERO_UINT256) revert UseLockInstead();
+        if (tokenIds_.length == ZERO_UINT256) revert EmptyArray();
 
         // Handle the unlock for each position and accumulate the unlocked amount.
         for (uint256 i; i < tokenIds_.length;) {

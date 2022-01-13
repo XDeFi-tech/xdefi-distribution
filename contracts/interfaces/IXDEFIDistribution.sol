@@ -24,7 +24,6 @@ interface IXDEFIDistribution is IERC721Enumerable {
     error PositionStillLocked();
     error TokenDoesNotExist();
     error Unauthorized();
-    error UseLockInstead();
 
     struct Position {
         uint96 units;  // 240,000,000,000,000,000,000,000,000 XDEFI * 2.55x bonus (which fits in a `uint96`).
