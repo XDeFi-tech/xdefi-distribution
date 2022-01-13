@@ -16,7 +16,7 @@ contract XDEFIDistributionHelper is IXDEFIDistributionHelper {
         }
     }
 
-    function getAllLockedPositionsForAccount(address xdefiDistribution_, address account_) public view returns (uint256[] memory tokenIds_, IXDEFIDistribution.Position[] memory positions_, uint256[] memory withdrawables_) {
+    function getAllLockedPositionsForAccount(address xdefiDistribution_, address account_) external view returns (uint256[] memory tokenIds_, IXDEFIDistributionLike.Position[] memory positions_, uint256[] memory withdrawables_) {
         uint256[] memory tokenIds = getAllTokensForAccount(xdefiDistribution_, account_);
 
         uint256 allTokenCount = tokenIds.length;

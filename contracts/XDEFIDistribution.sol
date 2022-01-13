@@ -177,9 +177,9 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         emit DistributionUpdated(msg.sender, newXDEFI);
     }
 
-    function withdrawableOf(uint256 tokenId_) public view returns (uint256 withdrawableXDEFI_) {
+    function withdrawableOf(uint256 tokenId_) external view returns (uint256 withdrawableXDEFI_) {
         Position storage position = positionOf[tokenId_];
-        return _withdrawableGiven(position.units, position.depositedXDEFI, position.pointsCorrection);
+        withdrawableXDEFI_ = _withdrawableGiven(position.units, position.depositedXDEFI, position.pointsCorrection);
     }
 
     /****************************/
