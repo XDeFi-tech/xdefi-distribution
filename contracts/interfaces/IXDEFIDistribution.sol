@@ -41,6 +41,9 @@ interface IXDEFIDistribution is IERC721Enumerable {
     /// @notice Emitted when an account has accepted ownership.
     event OwnershipAccepted(address indexed previousOwner, address indexed owner);
 
+    /// @notice Emitted when the base URI is set (or re-set).
+    event BaseURISet(string);
+
     /// @notice Emitted when the contract is no longer allowing locking XDEFI, and is allowing all locked positions to be unlocked effective immediately.
     event EmergencyModeActivated();
 
@@ -100,7 +103,7 @@ interface IXDEFIDistribution is IERC721Enumerable {
     function proposeOwnership(address newOwner_) external;
 
     /// @notice Sets the base URI for NFT metadata.
-    function setBaseURI(string memory baseURI_) external;
+    function setBaseURI(string calldata baseURI_) external;
 
     /// @notice Allows the setting or un-setting (when the multiplier is 0) of multipliers for lock durations. Scaled such that 1x is 100.
     function setLockPeriods(uint256[] memory durations_, uint8[] memory multipliers) external;

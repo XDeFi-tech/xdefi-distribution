@@ -92,8 +92,10 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         );
     }
 
-    function setBaseURI(string memory baseURI_) external onlyOwner {
-        baseURI = baseURI_;
+    function setBaseURI(string calldata baseURI_) external onlyOwner {
+        emit BaseURISet(
+            baseURI = baseURI_
+        );
     }
 
     function setLockPeriods(uint256[] memory durations_, uint8[] memory multipliers) external onlyOwner {
