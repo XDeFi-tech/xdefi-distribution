@@ -10,3 +10,16 @@ interface IERC721Receiver {
 
 }
 
+contract ReceiverCallingUpdateDistribution is IERC721Receiver {
+
+    function onERC721Received(address, address, uint256, bytes memory) public returns (bytes4 selector_) {
+        IXDEFIDistribution(msg.sender).updateDistribution();
+
+        return this.onERC721Received.selector;
+    }
+
+    function unlock(address xdefiDistribution_, uint256 tokenId_, address destination_) external {
+        IXDEFIDistribution(xdefiDistribution_).unlock(tokenId_, destination_);
+    }
+
+}
