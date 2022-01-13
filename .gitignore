@@ -6,3 +6,4 @@ coverage
 coverage.json
 .secrets.json
 .DS_Store
+reports/*

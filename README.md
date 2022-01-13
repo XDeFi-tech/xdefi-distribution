@@ -51,8 +51,7 @@ Ensure a `./secrets.json` exists with:
         "mnemonic": "some mnemonic",
         "xdefi": "address of XDEFI token",
         "rpc": "HTTPS RPC URL",
-        "baseURI": "Base URI for NFTs",
-        "zeroDurationPointBase": "0"
+        "baseURI": "Base URI for NFTs"
     },
     "rinkeby": {...},
     "mainnet": {...},
