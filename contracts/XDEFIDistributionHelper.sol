@@ -11,36 +11,47 @@ contract XDEFIDistributionHelper is IXDEFIDistributionHelper {
         uint256 count = IXDEFIDistributionLike(xdefiDistribution_).balanceOf(account_);
         tokenIds_ = new uint256[](count);
 
-        for (uint256 i; i < count; ++i) {
-            tokenIds_[i] = IXDEFIDistribution(xdefiDistribution_).tokenOfOwnerByIndex(account_, i);
+        for (uint256 i; i < count;) {
+            tokenIds_[i] = IXDEFIDistributionLike(xdefiDistribution_).tokenOfOwnerByIndex(account_, i);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
     function getAllLockedPositionsForAccount(address xdefiDistribution_, address account_) external view returns (uint256[] memory tokenIds_, IXDEFIDistributionLike.Position[] memory positions_, uint256[] memory withdrawables_) {
         uint256[] memory tokenIds = getAllTokensForAccount(xdefiDistribution_, account_);
 
-        uint256 allTokenCount = tokenIds.length;
-
-        IXDEFIDistribution.Position[] memory positions = new IXDEFIDistribution.Position[](allTokenCount);
+        IXDEFIDistributionLike.Position[] memory positions = new IXDEFIDistributionLike.Position[](tokenIds.length);
 
         uint256 validPositionCount;
 
-        for (uint256 i; i < allTokenCount; ++i) {
-            (uint96 units, uint88 depositedXDEFI, uint32 expiry, uint32 created, uint8 bonusMultiplier, int256 pointsCorrection) = IXDEFIDistribution(xdefiDistribution_).positionOf(tokenIds[i]);
+        // NOTE: unchecked around entire for-loop due to the continue.
+        unchecked {
+            for (uint256 i; i < tokenIds.length; ++i) {
+                uint256 tokenId = tokenIds[i];
+                IXDEFIDistributionLike.Position memory position = IXDEFIDistributionLike(xdefiDistribution_).positionOf(tokenId);
 
-            if (expiry == uint32(0)) continue;
+                if (position.expiry == uint32(0)) continue;
 
-            tokenIds[validPositionCount] = tokenIds[i];
-            positions[validPositionCount++] = IXDEFIDistribution.Position(units, depositedXDEFI, expiry, created, bonusMultiplier, pointsCorrection);
+                tokenIds[validPositionCount] = tokenId;
+                positions[validPositionCount++] = position;
+            }
         }
 
+
         tokenIds_ = new uint256[](validPositionCount);
-        positions_ = new IXDEFIDistribution.Position[](validPositionCount);
+        positions_ = new IXDEFIDistributionLike.Position[](validPositionCount);
         withdrawables_ = new uint256[](validPositionCount);
 
-        for (uint256 i; i < validPositionCount; ++i) {
+        for (uint256 i; i < validPositionCount;) {
             positions_[i] = positions[i];
-            withdrawables_[i] = IXDEFIDistribution(xdefiDistribution_).withdrawableOf(tokenIds_[i] = tokenIds[i]);
+            withdrawables_[i] = IXDEFIDistributionLike(xdefiDistribution_).withdrawableOf(tokenIds_[i] = tokenIds[i]);
+
+            unchecked {
+                ++i;
+            }
         }
     }
 
