@@ -38,7 +38,10 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     address public owner;
     address public pendingOwner;
 
-    uint256 internal _locked;
+    uint256 internal constant IS_NOT_LOCKED = uint256(1);
+    uint256 internal constant IS_LOCKED = uint256(2);
+
+    uint256 internal _lockedStatus = IS_NOT_LOCKED;
 
     bool public inEmergencyMode;
 
@@ -62,10 +65,22 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     }
 
     modifier noReenter() {
-        require(_locked == 0, "LOCKED");
-        _locked = uint256(1);
+        if (_lockedStatus == IS_LOCKED) revert NoReentering();
+
+        _lockedStatus = IS_LOCKED;
         _;
-        _locked = uint256(0);
+        _lockedStatus = IS_NOT_LOCKED;
+    }
+
+    modifier updatePointsPerUnitAtStart() {
+        updateDistribution();
+        _;
+    }
+
+    modifier updateDistributableAtEnd() {
+        _;
+        // NOTE: This needs to be done after updating `totalDepositedXDEFI` (which happens in `_destroyLockedPosition`) and transferring out.
+        _updateDistributableXDEFI();
     }
 
     /*******************/
