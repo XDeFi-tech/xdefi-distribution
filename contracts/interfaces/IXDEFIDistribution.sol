@@ -59,6 +59,9 @@ interface IXDEFIDistribution is IERC721Enumerable {
     /// @notice Emitted when a new amount of XDEFI is distributed to all locked positions, by some caller.
     event DistributionUpdated(address indexed caller, uint256 amount);
 
+    /// @notice Emitted when unlocked tokens are merged into one.
+    event TokensMerged(uint256[] mergedTokenIds, uint256 resultingTokenId);
+
     /// @notice The address of the XDEFI token.
     function XDEFI() external view returns (address XDEFI_);
 

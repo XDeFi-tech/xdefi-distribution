@@ -245,6 +245,8 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
         // Mine a new NFT to the destinations, based on the accumulated points.
         _safeMint(destination_, tokenId_ = _generateNewTokenId(points));
+
+        emit TokensMerged(tokenIds_, tokenId_);
     }
 
     function pointsOf(uint256 tokenId_) external view returns (uint256 points_) {
