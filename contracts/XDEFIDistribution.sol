@@ -12,9 +12,14 @@ import { IXDEFIDistribution } from "./interfaces/IXDEFIDistribution.sol";
 contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     uint88 internal MAX_TOTAL_XDEFI_SUPPLY = uint88(240_000_000_000_000_000_000_000_000);
+    address internal constant ZERO_ADDRESS = address(0);
+
+    uint256 internal constant ZERO_UINT256 = uint256(0);
+    uint256 internal constant ONE_UINT256 = uint256(1);
+    uint256 internal constant TWO_UINT256 = uint256(2);
 
     // See https://github.com/ethereum/EIPs/issues/1726#issuecomment-472352728
-    uint256 internal constant _pointsMultiplier = uint256(2**128);
+    uint256 internal constant POINTS_MULTIPLIER_BITS = uint256(72);
     uint256 internal _pointsPerUnit;
 
     address public immutable XDEFI;
@@ -27,7 +32,6 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     mapping(uint256 => uint8) public bonusMultiplierOf;  // Scaled by 100 (i.e. 1.1x is 110, 2.55x is 255).
 
-    uint256 internal immutable _zeroDurationPointBase;
 
     string public baseURI;
 
@@ -36,15 +40,24 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     uint256 internal _locked;
 
-    constructor (address XDEFI_, string memory baseURI_, uint256 zeroDurationPointBase_) ERC721("Locked XDEFI", "lXDEFI") {
-        require((XDEFI = XDEFI_) != address(0), "INVALID_TOKEN");
+    bool public inEmergencyMode;
+
+    uint256 internal constant MAX_DURATION = uint256(315360000 seconds);  // 10 years.
+    uint256 internal constant MAX_BONUS_MULTIPLIER = uint256(255);  // 2.55x.
+
+    uint256 public constant MINIMUM_UNITS = uint256(1e18);
+
+    constructor (address xdefi_, string memory baseURI_) ERC721("Locked XDEFI", "lXDEFI") {
+        // Set `xdefi` immutable and check that it's not empty.
+        if ((xdefi = xdefi_) == ZERO_ADDRESS) revert InvalidToken();
+
         owner = msg.sender;
         baseURI = baseURI_;
-        _zeroDurationPointBase = zeroDurationPointBase_;
     }
 
     modifier onlyOwner() {
-        require(owner == msg.sender, "NOT_OWNER");
+        if (owner != msg.sender) revert Unauthorized();
+
         _;
     }
 
@@ -60,14 +73,23 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     /*******************/
 
     function acceptOwnership() external {
-        require(pendingOwner == msg.sender, "NOT_PENDING_OWNER");
+        if (pendingOwner != msg.sender) revert Unauthorized();
+
         emit OwnershipAccepted(owner, msg.sender);
         owner = msg.sender;
-        pendingOwner = address(0);
+        pendingOwner = ZERO_ADDRESS;
+    }
+
+    function activateEmergencyMode() external onlyOwner {
+        inEmergencyMode = true;
+        emit EmergencyModeActivated();
     }
 
     function proposeOwnership(address newOwner_) external onlyOwner {
-        emit OwnershipProposed(owner, pendingOwner = newOwner_);
+        emit OwnershipProposed(
+            owner,
+            pendingOwner = newOwner_
+        );
     }
 
     function setBaseURI(string memory baseURI_) external onlyOwner {

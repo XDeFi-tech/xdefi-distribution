@@ -2,14 +2,13 @@
 
 pragma solidity =0.8.10;
 
-import { IXDEFIDistribution } from "./interfaces/IXDEFIDistribution.sol";
-import { IXDEFIDistributionHelper } from "./interfaces/IXDEFIDistributionHelper.sol";
+import { IXDEFIDistributionHelper, IXDEFIDistributionLike } from "./interfaces/IXDEFIDistributionHelper.sol";
 
 /// @dev Stateless helper contract for external clients to reduce web3 calls to gather XDEFIDistribution information related to individual accounts.
 contract XDEFIDistributionHelper is IXDEFIDistributionHelper {
 
     function getAllTokensForAccount(address xdefiDistribution_, address account_) public view returns (uint256[] memory tokenIds_) {
-        uint256 count = IXDEFIDistribution(xdefiDistribution_).balanceOf(account_);
+        uint256 count = IXDEFIDistributionLike(xdefiDistribution_).balanceOf(account_);
         tokenIds_ = new uint256[](count);
 
         for (uint256 i; i < count; ++i) {

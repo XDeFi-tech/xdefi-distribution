@@ -6,10 +6,30 @@ import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensio
 
 interface IXDEFIDistribution is IERC721Enumerable {
 
+    error CannotUnlock();
+    error EmptyArray();
+    error IncorrectBonusMultiplier();
+    error InsufficientAmountUnlocked();
+    error InvalidDuration();
+    error InvalidMultiplier();
+    error InvalidToken();
+    error LockingIsDisabled();
+    error LockResultsInTooFewUnits();
+    error MustMergeMultiple();
+    error NoReentering();
+    error NoUnitSupply();
+    error NotInEmergencyMode();
+    error NotTokenOwner();
+    error PositionAlreadyUnlocked();
+    error PositionStillLocked();
+    error TokenDoesNotExist();
+    error Unauthorized();
+    error UseLockInstead();
+
     struct Position {
-        uint96 units;  // 240,000,000,000,000,000,000,000,000 XDEFI * 100x bonus (which fits in a uint96).
-        uint88 depositedXDEFI; // XDEFI cap is 240000000000000000000000000 (which fits in a uint88).
-        uint32 expiry;  // block timestamps for the next 50 years (which fits in a uint32).
+        uint96 units;  // 240,000,000,000,000,000,000,000,000 XDEFI * 2.55x bonus (which fits in a `uint96`).
+        uint88 depositedXDEFI;  // XDEFI cap is 240000000000000000000000000 (which fits in a `uint88`).
+        uint32 expiry;  // block timestamps for the next 50 years (which fits in a `uint32`).
         uint32 created;
         uint8 bonusMultiplier;
         int256 pointsCorrection;
@@ -20,6 +40,9 @@ interface IXDEFIDistribution is IERC721Enumerable {
 
     /// @notice Emitted when an account has accepted ownership.
     event OwnershipAccepted(address indexed previousOwner, address indexed owner);
+
+    /// @notice Emitted when the contract is no longer allowing locking XDEFI, and is allowing all locked positions to be unlocked effective immediately.
+    event EmergencyModeActivated();
 
     /// @notice Emitted when a new lock period duration, in seconds, has been enabled with some bonus multiplier (scaled by 100, 0 signaling it is disabled).
     event LockPeriodSet(uint256 duration, uint8 bonusMultiplier);
@@ -60,12 +83,18 @@ interface IXDEFIDistribution is IERC721Enumerable {
     /// @notice The account that can take ownership of the contract.
     function pendingOwner() external view returns (address pendingOwner_);
 
+    /// @notice The contract is no longer allowing locking XDEFI, and is allowing all locked positions to be unlocked effective immediately.
+    function inEmergencyMode() external view returns (bool lockingDisabled_);
+
     /*******************/
     /* Admin Functions */
     /*******************/
 
     /// @notice Allows the `pendingOwner` to take ownership of the contract.
     function acceptOwnership() external;
+
+    /// @notice Disallows locking XDEFI, and is allows all locked positions to be unlocked effective immediately.
+    function activateEmergencyMode() external;
 
     /// @notice Allows the owner to propose a new owner for the contract.
     function proposeOwnership(address newOwner_) external;
