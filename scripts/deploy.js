@@ -11,7 +11,7 @@ async function main() {
 
     if (!balance) return;
 
-    const XDEFIDistribution = await (await (await ethers.getContractFactory("XDEFIDistribution")).deploy(xdefi, baseURI, zeroDurationPointBase)).deployed();
+    const XDEFIDistribution = await (await (await ethers.getContractFactory("XDEFIDistribution")).deploy(xdefi, baseURI)).deployed();
 
     console.log("XDEFIDistribution address:", XDEFIDistribution.address);
 

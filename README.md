@@ -5,8 +5,8 @@ This contract provides a mechanisms for users to lock XDEFI, resulting in non-fu
 
 ## Features and Functionality
 - Users can lock in an amount of XDEFI for a duration and cannot unlock/withdraw during the specified duration
-- Lock durations and their respective bonus multiplier are definable by the admin, and can be changed. Even 0 seconds can be enabled. "No bonus" is effectively a bonus multiplier of 1, which still receives a "normal" share of future distributed rewards.
-- User can lock in any amount of XDEFI, but not 0.
+- Lock durations and their respective bonus multiplier are definable by the admin, and can be changed. (0-second durations cannot be enabled). "No bonus" is effectively a bonus multiplier of 1x, which still receives a "normal" share of future distributed rewards.
+- User can lock in any amount of XDEFI that results in at least 1e18 (1 with 18 decimals) "units" (i.e. 1 XDEFI at a 1x bonus multiplier).
 - The lockup becomes a “locked position”, which is an NFT (similar to Uniswap v3's liquidity position NFTs, but simpler).
 - The "locked position" is transferable as a NFT during lockup and after it is unlocked/withdrawn.
 - After a locked position's lockup time expires, the owner of the NFT can re-lock the amount into a new stake position, or withdraw it, or some combination, in one tx.
@@ -17,7 +17,8 @@ This contract provides a mechanisms for users to lock XDEFI, resulting in non-fu
 - The NFT points to some off-chain server that will serve the correct metadata given the NFTs points (i.e. `tokenId`). This is a stateless process off-chain.
 - Once the NFT position has been unlocked and the XDEFI withdrawn, the NFT still exists simply as a transferable loyalty NFT, with its same score, but without any withdrawable XDEFI.
 - Users can combine several of these amount-less loyalty NFTs into one, where the resulting NFT’s points is the sum of those burned to produce it.
-- Contract supports Permit, which avoids the need to do ERC20 approvals for XDEFI locking.
+- Contract supports ERC20 Permit, which avoids the need to do ERC20 approvals for XDEFI locking.
+- A "no-going-back" emergency mode exists where the contract admin can prevent new locks, allow immediate unlocks of all locked positions, and users to remove just their deposits in the event of severe issues.
 
 ## Contracts
 
@@ -59,8 +60,6 @@ Ensure a `./secrets.json` exists with:
     "some-other-network": {...}
 }
 ```
-
-Note: `zeroDurationPointBase` is the amount of points a position will be awarded for "locking in" for a 0 duration.
 
 Deploy with `npm run deploy:networkName`, where `networkName` is the name of the network (i.e. `ropsten`, `mainnet`, etc).
 
