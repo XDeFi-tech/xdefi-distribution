@@ -16,6 +16,8 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     uint256 internal constant ZERO_UINT256 = uint256(0);
     uint256 internal constant ONE_UINT256 = uint256(1);
     uint256 internal constant TWO_UINT256 = uint256(2);
+    uint256 internal constant ONE_HUNDRED_UINT256 = uint256(100);
+    uint256 internal constant ONE_HUNDRED_TWENTY_EIGHT_UINT256 = uint256(128);
 
     // See https://github.com/ethereum/EIPs/issues/1726#issuecomment-472352728
     uint256 internal constant POINTS_MULTIPLIER_BITS = uint256(72);
@@ -325,7 +327,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
         // Create Position.
         unchecked {
-            uint256 units = (amount_ * bonusMultiplier) / uint256(100);
+            uint256 units = (amount_ * bonusMultiplier) / ONE_HUNDRED_UINT256;
 
             // Revert if position will end up with less than define minimum lockable units.
             if (units < MINIMUM_UNITS) revert LockResultsInTooFewUnits();
@@ -388,7 +390,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         // Score is implicitly capped at max supply of XDEFI for 10 years locked (less than 2**119).
         // Total minted NFTs is expected to be reasonably capped at `type(uint128).max`.
         unchecked {
-            tokenId_ = (score_ << uint256(128)) + _tokensMinted++;
+            tokenId_ = (score_ << ONE_HUNDRED_TWENTY_EIGHT_UINT256) + _tokensMinted++;
         }
     }
 
@@ -400,7 +402,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     }
 
     function _getScoreFromTokenId(uint256 tokenId_) internal pure returns (uint256 score_) {
-        score_ = tokenId_ >> uint256(128);
+        score_ = tokenId_ >> ONE_HUNDRED_TWENTY_EIGHT_UINT256;
     }
 
     function _lock(uint256 amount_, uint256 duration_, uint256 bonusMultiplier_, address destination_) internal returns (uint256 tokenId_) {
@@ -412,7 +414,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     }
 
     function _relock(uint256 lockAmount_, uint256 amountUnlocked_, uint256 duration_, uint256 bonusMultiplier_, address destination_) internal returns (uint256 tokenId_) {
-        // Throw convenient error if trying to re-lock more than was unlocked. `amountUnlocked_ - lockAmount_` cannot reverted below now.
+        // Throw convenient error if trying to re-lock more than was unlocked. `amountUnlocked_ - lockAmount_` cannot revert below now.
         if (lockAmount_ > amountUnlocked_) revert InsufficientAmountUnlocked();
 
         // Handle the lock position creation and get the tokenId of the locked position.
