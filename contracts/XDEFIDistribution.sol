@@ -412,7 +412,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     }
 
     function _relock(uint256 lockAmount_, uint256 amountUnlocked_, uint256 duration_, uint256 bonusMultiplier_, address destination_) internal returns (uint256 tokenId_) {
-        // Throw convenient error if trying to re-lock more than was unlocked. `amountUnlocked_ - lockAmount_` would have reverted below anyway.
+        // Throw convenient error if trying to re-lock more than was unlocked. `amountUnlocked_ - lockAmount_` cannot reverted below now.
         if (lockAmount_ > amountUnlocked_) revert InsufficientAmountUnlocked();
 
         // Handle the lock position creation and get the tokenId of the locked position.
