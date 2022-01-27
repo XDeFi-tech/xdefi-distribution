@@ -1105,18 +1105,18 @@ describe("XDEFIDistribution", () => {
         // Position 1 locks
         const scoreOfPosition1 = (await XDEFIDistribution.getScore(toWei(1000), durations[0])).toString();
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
-        expect(await XDEFIDistribution.scoreOf(nft1)).to.equal(scoreOfPosition1);
+        expect((await XDEFIDistribution.attributesOf(nft1)).score_).to.equal(scoreOfPosition1);
 
         // Position 2 locks and is transferred to account 1
         const scoreOfPosition2 = (await XDEFIDistribution.getScore(toWei(1000), durations[1])).toString();
         const nft2 = await lock(account2, toWei(1000), durations[1], bonusMultipliers[1]);
-        expect(await XDEFIDistribution.scoreOf(nft2)).to.equal(scoreOfPosition2);
+        expect((await XDEFIDistribution.attributesOf(nft2)).score_).to.equal(scoreOfPosition2);
         await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
 
         // Position 3 locks and is transferred to account 1
         const scoreOfPosition3 = (await XDEFIDistribution.getScore(toWei(1000), durations[2])).toString();
         const nft3 = await lock(account3, toWei(1000), durations[2], bonusMultipliers[2]);
-        expect(await XDEFIDistribution.scoreOf(nft3)).to.equal(scoreOfPosition3);
+        expect((await XDEFIDistribution.attributesOf(nft3)).score_).to.equal(scoreOfPosition3);
         await (await XDEFIDistribution.connect(account3).transferFrom(account3.address, account1.address, nft3)).wait();
 
         // First distribution (should split between position 1, 2, and 3)
@@ -1133,7 +1133,7 @@ describe("XDEFIDistribution", () => {
         const nft4 = (await XDEFIDistribution.tokenOfOwnerByIndex(account1.address, 0)).toString();
         expect((await XDEFIDistribution.positionOf(nft4)).units).to.equal(toWei(0));
         expect(await XDEFIDistribution.withdrawableOf(nft4)).to.equal(toWei(0));
-        expect(await XDEFIDistribution.scoreOf(nft4)).to.equal(BigInt(scoreOfPosition1) + BigInt(scoreOfPosition2) + BigInt(scoreOfPosition3));
+        expect((await XDEFIDistribution.attributesOf(nft4)).score_).to.equal(BigInt(scoreOfPosition1) + BigInt(scoreOfPosition2) + BigInt(scoreOfPosition3));
 
         // Unlocked position 4 transferred
         await (await XDEFIDistribution.connect(account1).transferFrom(account1.address, account2.address, nft4)).wait();
@@ -1192,7 +1192,7 @@ describe("XDEFIDistribution", () => {
 
     it("Can enter and exit deposited amount, with permits, with no distributions (no bonuses)", async () => {
         // Position 1 locks
-        const nft1 = await lockWithPermit(wallet, toWei(1000), durations[0], bonusMultipliers[0], wallet, 0, MAX_UINT256);
+        const nft1 = await lockWithPermit(wallet, toWei(1000), durations[0], bonusMultipliers[0], wallet, 0, maxDeadline);
         expect(await XDEFI.balanceOf(wallet.address)).to.equal(toWei(0));
         expect(await XDEFIDistribution.balanceOf(wallet.address)).to.equal('1');
         expect((await XDEFIDistribution.positionOf(nft1)).units).to.equal(toWei(1000));
@@ -1291,5 +1291,70 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.totalDepositedXDEFI()).to.equal(toWei(0));
         expect(await XDEFIDistribution.totalUnits()).to.equal(toWei(0));
         expect(await XDEFIDistribution.totalSupply()).to.equal(2);
+    });
+
+    it("Can consume from unlocked positions", async () => {
+        // Position 1 locks
+        const scoreOfPosition1 = (await XDEFIDistribution.getScore(toWei(1000), durations[0])).toString();
+        const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
+        const [ tier1, score1, sequence1 ] = await XDEFIDistribution.attributesOf(nft1);
+        expect(tier1).to.equal(1);
+        expect(score1).to.equal(scoreOfPosition1);
+        expect(sequence1).to.equal(0);
+
+        // Position 2 locks and is transferred to account 1
+        const scoreOfPosition2 = (await XDEFIDistribution.getScore(toWei(1000), durations[1])).toString();
+        const nft2 = await lock(account2, toWei(1000), durations[1], bonusMultipliers[1]);
+        const [ tier2, score2, sequence2 ] = await XDEFIDistribution.attributesOf(nft2);
+        expect(tier2).to.equal(1);
+        expect(score2).to.equal(scoreOfPosition2);
+        expect(sequence2).to.equal(1);
+        await (await XDEFIDistribution.connect(account2).transferFrom(account2.address, account1.address, nft2)).wait();
+
+        // Position 3 locks and is transferred to account 1
+        const scoreOfPosition3 = (await XDEFIDistribution.getScore(toWei(1000), durations[2])).toString();
+        const nft3 = await lock(account3, toWei(1000), durations[2], bonusMultipliers[2]);
+        const [ tier3, score3, sequence3 ] = await XDEFIDistribution.attributesOf(nft3);
+        expect(tier3).to.equal(1);
+        expect(score3).to.equal(scoreOfPosition3);
+        expect(sequence3).to.equal(2);
+        await (await XDEFIDistribution.connect(account3).transferFrom(account3.address, account1.address, nft3)).wait();
+
+        // Position 1, 2, and 3 unlock
+        await hre.ethers.provider.send('evm_increaseTime', [durations[2]]);
+        await (await XDEFIDistribution.connect(account1).unlockBatch([nft1, nft2, nft3], account1.address)).wait();
+
+        // Unlocked position 1 is consumed from by the owner
+        await (await XDEFIDistribution.connect(account1).consume(nft1, 10, account1.address)).wait();
+        const nft4 = await getMostRecentNFT(account1);
+        const [ tier4, score4, sequence4 ] = await XDEFIDistribution.attributesOf(nft4);
+        expect(tier4).to.equal(1);
+        expect(score4).to.equal(BigInt(scoreOfPosition1) - 10n);
+        expect(sequence4).to.equal(3);
+
+        // Unlocked position 2 is consumed from by account approved on token.
+        await (await XDEFIDistribution.connect(account1).approve(account2.address, nft2)).wait();
+        await (await XDEFIDistribution.connect(account2).consume(nft2, 20, account1.address)).wait();
+        const nft5 = await getMostRecentNFT(account1);
+        const [ tier5, score5, sequence5 ] = await XDEFIDistribution.attributesOf(nft5);
+        expect(tier5).to.equal(1);
+        expect(score5).to.equal(BigInt(scoreOfPosition2) - 20n);
+        expect(sequence5).to.equal(4);
+
+        // Unlocked position 3 is consumed from by account approved for all account1's tokens.
+        await (await XDEFIDistribution.connect(account1).setApprovalForAll(account3.address, true)).wait();
+        await (await XDEFIDistribution.connect(account3).consume(nft3, 30, account1.address)).wait();
+        const nft6 = await getMostRecentNFT(account1);
+        const [ tier6, score6, sequence6 ] = await XDEFIDistribution.attributesOf(nft6);
+        expect(tier6).to.equal(1);
+        expect(score6).to.equal(BigInt(scoreOfPosition3) - 30n);
+        expect(sequence6).to.equal(5);
+    });
+
+    it("Cannot consume from locked positions", async () => {
+        // Position 1 locks
+        const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
+
+        await expect(XDEFIDistribution.connect(account1).consume(nft1, 10, account1.address)).to.be.revertedWith("PositionStillLocked()");
     });
 });
