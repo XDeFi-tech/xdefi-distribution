@@ -3,6 +3,10 @@ const url = require('url');
 const fs = require('fs');
 const path = require('path');
 
+// TODO: add missing NFT media
+// TODO: add trait/attribute indicating if the NFT is backed by withdrawable XDEFI, and how much
+// TODO: env for `fee_recipient` and chain read api key
+
 const host = 'localhost';
 const port = 8000;
 
@@ -11,82 +15,66 @@ const errorResponse = (res) => {
     res.end()
 };
 
-const getMedia = (tier) => {
-    if (tier == 1) return 'IKALGO';
+const infoResponse = (res) => {
+    res.writeHead(200, { "Content-Type": "application/json" });
 
-    if (tier == 2) return 'OXTOPUS';
+    const metadata = JSON.stringify({
+        name: "XDEFI Distribution Creatures",
+        description: "XDEFI Distribution Creatures are tiered NFTs born from the creation of XDEFI Distribution Positions.",
+        image: "https://s2.coinmarketcap.com/static/img/coins/64x64/13472.png",
+        external_link: "https://www.xdefi.io/",
+        seller_fee_basis_points: 100,  // 1% in basis pointts
+        fee_recipient: "0x0000000000000000000000000000000000000000"
+    });
 
-    if (tier == 3) return 'NAUTILUS';
+    res.end(metadata);
+};
 
-    if (tier == 4) return 'KAURNA';
+const getCreature = (tier) => {
+    if (tier === '1') return { name: 'Ikalgo', file: 'IKALGO' };
 
-    if (tier == 5) return 'HALIPHRON';
+    if (tier === '2') return { name: 'Oxtopus', file: 'OXTOPUS' };
 
-    if (tier == 6) return 'KANALOA';
+    if (tier === '3') return { name: 'Nautilus', file: 'NAUTILUS' };
 
-    if (tier == 7) return 'TANIWHA';
+    if (tier === '4') return { name: 'Kaurna', file: 'KAURNA' };
 
-    if (tier == 8) return 'CTHULHU';
+    if (tier === '5') return { name: 'Haliphron', file: 'HALIPHRON' };
 
-    if (tier == 9) return 'YAKUMAMA';
+    if (tier === '6') return { name: 'Kanaloa', file: 'KANALOA' };
 
-    if (tier == 10) return 'HAFGUFA';
+    if (tier === '7') return { name: 'Taniwha', file: 'TANIWHA' };
 
-    if (tier == 11) return 'AKKOROKAMUI';
+    if (tier === '8') return { name: 'Cthulhu', file: 'CTHULHU' };
 
-    if (tier == 12) return 'NESSIE';
+    if (tier === '9') return { name: 'Yakumama', file: 'YAKUMAMA' };
 
-    if (tier == 13) return 'THE_KRAKEN';
+    if (tier === '10') return { name: 'Hafgufa', file: 'HAFGUFA' };
+
+    if (tier === '11') return { name: 'Akkorokamui', file: 'AKKOROKAMUI' };
+
+    if (tier === '12') return { name: 'Nessie', file: 'NESSIE' };
+
+    if (tier === '13') return { name: 'The Kraken', file: 'THE_KRAKEN' };
 
     throw Error('Invalid Tier');
 };
 
-const getScore = (xdefi, days) => {
-    return 1_000_000_000_000_000_000n * BigInt(xdefi) * 86_400n * BigInt(days);
-}
-
-const getTier = (score) => {
-    if (score <= getScore(50, 30)) return 1;
-
-    if (score <= getScore(100, 30)) return 2;
-
-    if (score <= getScore(200, 30)) return 3;
-
-    if (score <= getScore(400, 30)) return 4;
-
-    if (score <= getScore(800, 30)) return 5;
-
-    if (score <= getScore(1_600, 30)) return 6;
-
-    if (score <= getScore(3_200, 30)) return 7;
-
-    if (score <= getScore(6_400, 30)) return 8;
-
-    if (score <= getScore(12_800, 30)) return 9;
-
-    if (score <= getScore(25_600, 30)) return 10;
-
-    if (score <= getScore(51_200, 30)) return 11;
-
-    if (score <= getScore(102_400, 30)) return 12;
-
-    return 13;
-};
-
 const getMetadata = (tokenId) => {
-    const mintSequence = tokenId & ((2n ** 128n) - 1n);
-    const score = tokenId >> 128n;
-    const tier = getTier(score);
+    const mintSequence = (tokenId & ((2n ** 128n) - 1n)).toString();
+    const score = ((tokenId >> 128n) & ((2n ** 124n) - 1n)).toString();
+    const tier = (tokenId >> 252n).toString();
+    const { name, file  } = getCreature(tier);
 
     return JSON.stringify({
         attributes: [
-            { display_type: 'number', trait_type: 'score', value: score.toString() },
+            { display_type: 'number', trait_type: 'score', value: score },
             { display_type: 'number', trait_type: 'tier', value: tier },
-            { display_type: 'number', trait_type: 'sequence', value: mintSequence.toString() },
+            { display_type: 'number', trait_type: 'sequence', value: mintSequence },
         ],
-        description: "XDEFIDistribution Position",
-        name: "XDEFIDistribution Position",
-        animation_url: `http://localhost:8000/media/${getMedia(tier)}.mp4`,
+        description: `${name} is a tier ${tier} XDEFI Distribution Creature.`,
+        name,
+        animation_url: `http://localhost:8000/media/${file}.mp4`,
     });
 };
 
@@ -118,6 +106,8 @@ const requestListener = function (req, res) {
     if (urlParts.length <= 1) return errorResponse(res);
 
     if (urlParts[1] === 'media' && urlParts.length === 3) return imageResponse(urlParts[2], res);
+
+    if (urlParts[1] === 'info' && urlParts.length === 2) return infoResponse(res);
 
     if (urlParts.length === 2) return metadataResponse(urlParts[1], res);
 

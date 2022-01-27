@@ -10,6 +10,7 @@ interface IXDEFIDistribution is IERC721Enumerable {
     error EmptyArray();
     error IncorrectBonusMultiplier();
     error InsufficientAmountUnlocked();
+    error InsufficientScore();
     error InvalidDuration();
     error InvalidMultiplier();
     error InvalidToken();
@@ -18,6 +19,7 @@ interface IXDEFIDistribution is IERC721Enumerable {
     error MustMergeMultiple();
     error NoReentering();
     error NoUnitSupply();
+    error NotApprovedOrOwnerOfToken();
     error NotInEmergencyMode();
     error NotTokenOwner();
     error PositionAlreadyUnlocked();
@@ -40,7 +42,7 @@ interface IXDEFIDistribution is IERC721Enumerable {
     event OwnershipAccepted(address indexed previousOwner, address indexed owner);
 
     /// @notice Emitted when the base URI is set (or re-set).
-    event BaseURISet(string);
+    event BaseURISet(string baseURI);
 
     /// @notice Emitted when the contract is no longer allowing locking XDEFI, and is allowing all locked positions to be unlocked effective immediately.
     event EmergencyModeActivated();
@@ -56,6 +58,9 @@ interface IXDEFIDistribution is IERC721Enumerable {
 
     /// @notice Emitted when a new amount of XDEFI is distributed to all locked positions, by some caller.
     event DistributionUpdated(address indexed caller, uint256 amount);
+
+    /// @notice Emitted when some score fo a token is consumed, resulting in a new token with a lesser score.
+    event ScoreConsumed(uint256 indexed tokenId, uint256 amount, uint256 newTokenId);
 
     /// @notice Emitted when unlocked tokens are merged into one.
     event TokensMerged(uint256[] mergedTokenIds, uint256 resultingTokenId);
@@ -151,14 +156,23 @@ interface IXDEFIDistribution is IERC721Enumerable {
     /* NFT Functions */
     /*****************/
 
+    /// @notice Returns the score, tier, and sequence of an NFT.
+    function attributesOf(uint256 tokenId_) external view returns (uint256 tier_, uint256 score_, uint256 sequence_);
+
+    /// @notice Consumes some score from an NFT by burning it and minting a new one with a reduced score.
+    function consume(uint256 tokenId_, uint256 amount_, address destination_) external returns (uint256 newTokenId_);
+
+    /// @notice Returns the URI for the contract metadata.
+    function contractURI() external view returns (string memory contractURI_);
+
     /// @notice Returns the score an NFT will have, given some amount locked for some duration.
     function getScore(uint256 amount_, uint256 duration_) external pure returns (uint256 score_);
 
+    /// @notice Returns the tier an NFT will have, given some score, which itself can be determined from `getScore`.
+    function getTier(uint256 score_) external pure returns (uint256 tier_);
+
     /// @notice Burns several unlocked NFTs to mint a new NFT that has their combined score.
     function merge(uint256[] calldata tokenIds_, address destination_) external returns (uint256 tokenId_);
-
-    /// @notice Returns the score of an NFT.
-    function scoreOf(uint256 tokenId_) external view returns (uint256 score_);
 
     /// @notice Returns the URI for the NFT metadata for a given token ID.
     function tokenURI(uint256 tokenId_) external view returns (string memory tokenURI_);
