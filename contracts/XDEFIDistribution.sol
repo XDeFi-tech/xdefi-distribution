@@ -23,6 +23,19 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     uint256 internal constant ONE_HUNDRED_TWENTY_FOUR_BIT_MASK = uint256(type(uint128).max >> 4);
     uint256 internal constant ONE_HUNDRED_TWENTY_EIGHT_BIT_MASK = type(uint128).max;
 
+    uint256 internal constant TIER_2_THRESHOLD = uint256(150 * 1e18 * 30 days);
+    uint256 internal constant TIER_3_THRESHOLD = uint256(300 * 1e18 * 30 days);
+    uint256 internal constant TIER_4_THRESHOLD = uint256(750 * 1e18 * 30 days);
+    uint256 internal constant TIER_5_THRESHOLD = uint256(1_500 * 1e18 * 30 days);
+    uint256 internal constant TIER_6_THRESHOLD = uint256(3_000 * 1e18 * 30 days);
+    uint256 internal constant TIER_7_THRESHOLD = uint256(7_000 * 1e18 * 30 days);
+    uint256 internal constant TIER_8_THRESHOLD = uint256(15_000 * 1e18 * 30 days);
+    uint256 internal constant TIER_9_THRESHOLD = uint256(30_000 * 1e18 * 30 days);
+    uint256 internal constant TIER_10_THRESHOLD = uint256(60_000 * 1e18 * 30 days);
+    uint256 internal constant TIER_11_THRESHOLD = uint256(120_000 * 1e18 * 30 days);
+    uint256 internal constant TIER_12_THRESHOLD = uint256(250_000 * 1e18 * 30 days);
+    uint256 internal constant TIER_13_THRESHOLD = uint256(500_000 * 1e18 * 30 days);
+
     // See https://github.com/ethereum/EIPs/issues/1726#issuecomment-472352728
     uint256 internal constant POINTS_MULTIPLIER_BITS = uint256(72);
     uint256 internal _pointsPerUnit;
@@ -56,7 +69,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     uint256 public constant MINIMUM_UNITS = uint256(1e18);
 
-    constructor (address xdefi_, string memory baseURI_) ERC721("XDEFI Distribution", "dXDEFI") {
+    constructor (address xdefi_, string memory baseURI_) ERC721("XDEFI Badgies", "bXDEFI") {
         // Set `xdefi` immutable and check that it's not empty.
         if ((xdefi = xdefi_) == ZERO_ADDRESS) revert InvalidToken();
 
@@ -176,6 +189,15 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
         // Send the unlocked XDEFI to the destination. (Don't need SafeERC20 since XDEFI is standard ERC20).
         IERC20(xdefi).transfer(destination_, amountUnlocked_);
+    }
+
+    function getBonusMultiplierOf(uint256 tokenId_) external view returns (uint256 bonusMultiplier_) {
+        // Fetch position.
+        Position storage position = positionOf[tokenId_];
+        uint256 units = uint256(position.units);
+        uint256 depositedXDEFI = uint256(position.depositedXDEFI);
+
+        bonusMultiplier_ = (units * ONE_HUNDRED_UINT256) / depositedXDEFI;
     }
 
     function lock(uint256 amount_, uint256 duration_, uint256 bonusMultiplier_, address destination_) external noReenter updatePointsPerUnitAtStart returns (uint256 tokenId_) {
@@ -453,29 +475,29 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     }
 
     function _getTier(uint256 score_) internal pure returns (uint256 tier_) {
-        if (score_ < uint256(150 * 1e18 * 30 days)) return uint256(1);
+        if (score_ < TIER_2_THRESHOLD) return uint256(1);
 
-        if (score_ < uint256(300 * 1e18 * 30 days)) return uint256(2);
+        if (score_ < TIER_3_THRESHOLD) return uint256(2);
 
-        if (score_ < uint256(700 * 1e18 * 30 days)) return uint256(3);
+        if (score_ < TIER_4_THRESHOLD) return uint256(3);
 
-        if (score_ < uint256(1_500 * 1e18 * 30 days)) return uint256(4);
+        if (score_ < TIER_5_THRESHOLD) return uint256(4);
 
-        if (score_ < uint256(3_000 * 1e18 * 30 days)) return uint256(5);
+        if (score_ < TIER_6_THRESHOLD) return uint256(5);
 
-        if (score_ < uint256(6_000 * 1e18 * 30 days)) return uint256(6);
+        if (score_ < TIER_7_THRESHOLD) return uint256(6);
 
-        if (score_ < uint256(12_000 * 1e18 * 30 days)) return uint256(7);
+        if (score_ < TIER_8_THRESHOLD) return uint256(7);
 
-        if (score_ < uint256(25_000 * 1e18 * 30 days)) return uint256(8);
+        if (score_ < TIER_9_THRESHOLD) return uint256(8);
 
-        if (score_ < uint256(50_000 * 1e18 * 30 days)) return uint256(9);
+        if (score_ < TIER_10_THRESHOLD) return uint256(9);
 
-        if (score_ < uint256(100_000 * 1e18 * 30 days)) return uint256(10);
+        if (score_ < TIER_11_THRESHOLD) return uint256(10);
 
-        if (score_ < uint256(200_000 * 1e18 * 30 days)) return uint256(11);
+        if (score_ < TIER_12_THRESHOLD) return uint256(11);
 
-        if (score_ < uint256(400_000 * 1e18 * 30 days)) return uint256(12);
+        if (score_ < TIER_13_THRESHOLD) return uint256(12);
 
         return uint256(13);
     }

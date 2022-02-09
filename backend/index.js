@@ -3,7 +3,6 @@ const url = require('url');
 const fs = require('fs');
 const path = require('path');
 
-// TODO: add missing NFT media
 // TODO: add trait/attribute indicating if the NFT is backed by withdrawable XDEFI, and how much
 // TODO: env for `fee_recipient` and chain read api key
 
@@ -23,7 +22,7 @@ const infoResponse = (res) => {
         description: "XDEFI Distribution Creatures are tiered NFTs born from the creation of XDEFI Distribution Positions.",
         image: "https://s2.coinmarketcap.com/static/img/coins/64x64/13472.png",
         external_link: "https://www.xdefi.io/",
-        seller_fee_basis_points: 100,  // 1% in basis pointts
+        seller_fee_basis_points: 100,  // 1% in basis points
         fee_recipient: "0x0000000000000000000000000000000000000000"
     });
 
@@ -31,31 +30,31 @@ const infoResponse = (res) => {
 };
 
 const getCreature = (tier) => {
-    if (tier === '1') return { name: 'Ikalgo', file: 'IKALGO' };
+    if (tier === '1') return { name: 'Ikalgo', file: 'ikalgo' };
 
-    if (tier === '2') return { name: 'Oxtopus', file: 'OXTOPUS' };
+    if (tier === '2') return { name: 'Oxtopus', file: 'oxtopus' };
 
-    if (tier === '3') return { name: 'Nautilus', file: 'NAUTILUS' };
+    if (tier === '3') return { name: 'Nautilus', file: 'nautilus' };
 
-    if (tier === '4') return { name: 'Kaurna', file: 'KAURNA' };
+    if (tier === '4') return { name: 'Kaurna', file: 'kaurna' };
 
-    if (tier === '5') return { name: 'Haliphron', file: 'HALIPHRON' };
+    if (tier === '5') return { name: 'Haliphron', file: 'haliphron' };
 
-    if (tier === '6') return { name: 'Kanaloa', file: 'KANALOA' };
+    if (tier === '6') return { name: 'Kanaloa', file: 'kanaloa' };
 
-    if (tier === '7') return { name: 'Taniwha', file: 'TANIWHA' };
+    if (tier === '7') return { name: 'Taniwha', file: 'taniwha' };
 
-    if (tier === '8') return { name: 'Cthulhu', file: 'CTHULHU' };
+    if (tier === '8') return { name: 'Cthulhu', file: 'cthulhu' };
 
-    if (tier === '9') return { name: 'Yakumama', file: 'YAKUMAMA' };
+    if (tier === '9') return { name: 'Yacumama', file: 'yacumama' };
 
-    if (tier === '10') return { name: 'Hafgufa', file: 'HAFGUFA' };
+    if (tier === '10') return { name: 'Hafgufa', file: 'hafgufa' };
 
-    if (tier === '11') return { name: 'Akkorokamui', file: 'AKKOROKAMUI' };
+    if (tier === '11') return { name: 'Akkorokamui', file: 'akkorokamui' };
 
-    if (tier === '12') return { name: 'Nessie', file: 'NESSIE' };
+    if (tier === '12') return { name: 'Nessie', file: 'nessie' };
 
-    if (tier === '13') return { name: 'The Kraken', file: 'THE_KRAKEN' };
+    if (tier === '13') return { name: 'The Kraken', file: 'thekraken' };
 
     throw Error('Invalid Tier');
 };
@@ -64,7 +63,7 @@ const getMetadata = (tokenId) => {
     const mintSequence = (tokenId & ((2n ** 128n) - 1n)).toString();
     const score = ((tokenId >> 128n) & ((2n ** 124n) - 1n)).toString();
     const tier = (tokenId >> 252n).toString();
-    const { name, file  } = getCreature(tier);
+    const { name, file } = getCreature(tier);
 
     return JSON.stringify({
         attributes: [
@@ -74,6 +73,8 @@ const getMetadata = (tokenId) => {
         ],
         description: `${name} is a tier ${tier} XDEFI Distribution Creature.`,
         name,
+        background_color: "2040DF",
+        image: `http://localhost:8000/media/${file}.png`,
         animation_url: `http://localhost:8000/media/${file}.mp4`,
     });
 };
@@ -89,13 +90,13 @@ const metadataResponse = (tokenIdParam, res) => {
     res.end(getMetadata(tokenId));
 };
 
-const imageResponse = (imageName, res) => {
-    const filePath = path.join(__dirname, `media/${imageName}`);
+const mediaResponse = (fileName, res) => {
+    const filePath = path.join(__dirname, `media/${fileName}`);
 
     fs.readFile(filePath, (err, content) => {
         if (err) return errorResponse(res);
 
-        res.writeHead(200, { 'Content-type': 'video/mp4' });
+        res.writeHead(200, { 'Content-type': fileName.endsWith('.mp4') ? 'video/mp4' : 'image/png' });
         res.end(content);
     });
 };
@@ -105,7 +106,7 @@ const requestListener = function (req, res) {
 
     if (urlParts.length <= 1) return errorResponse(res);
 
-    if (urlParts[1] === 'media' && urlParts.length === 3) return imageResponse(urlParts[2], res);
+    if (urlParts[1] === 'media' && urlParts.length === 3) return mediaResponse(urlParts[2], res);
 
     if (urlParts[1] === 'info' && urlParts.length === 2) return infoResponse(res);
 

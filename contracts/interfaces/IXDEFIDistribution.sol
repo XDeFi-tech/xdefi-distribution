@@ -124,6 +124,9 @@ interface IXDEFIDistribution is IERC721Enumerable {
     /// @notice Unlock only the deposited amount from a non-fungible position, sending the XDEFI to some destination, when in emergency mode.
     function emergencyUnlock(uint256 tokenId_, address destination_) external returns (uint256 amountUnlocked_);
 
+    /// @notice Returns the bonus multiplier of a locked position.
+    function getBonusMultiplierOf(uint256 tokenId_) external view returns (uint256 bonusMultiplier_);
+
     /// @notice Locks some amount of XDEFI into a non-fungible (NFT) position, for a duration of time. The caller must first approve this contract to spend its XDEFI.
     function lock(uint256 amount_, uint256 duration_, uint256 bonusMultiplier_, address destination_) external returns (uint256 tokenId_);
 
