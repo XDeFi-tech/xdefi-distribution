@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity =0.8.10;
+pragma solidity =0.8.12;
 
 import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
@@ -21,11 +21,14 @@ interface IXDEFIDistribution is IERC721Enumerable {
     /* Errors */
     /**********/
 
+    error BeyondConsumeLimit();
     error CannotUnlock();
+    error ConsumePermitExpired();
     error EmptyArray();
     error IncorrectBonusMultiplier();
     error InsufficientAmountUnlocked();
-    error InsufficientScore();
+    error InsufficientCredits();
+    error InvalidConsumePermit();
     error InvalidDuration();
     error InvalidMultiplier();
     error InvalidToken();
@@ -36,7 +39,6 @@ interface IXDEFIDistribution is IERC721Enumerable {
     error NoUnitSupply();
     error NotApprovedOrOwnerOfToken();
     error NotInEmergencyMode();
-    error NotTokenOwner();
     error PositionAlreadyUnlocked();
     error PositionStillLocked();
     error TokenDoesNotExist();
@@ -48,6 +50,9 @@ interface IXDEFIDistribution is IERC721Enumerable {
 
     /// @notice Emitted when the base URI is set (or re-set).
     event BaseURISet(string baseURI);
+
+    /// @notice Emitted when some credits of a token are consumed.
+    event CreditsConsumed(uint256 indexed tokenId, address indexed consumer, uint256 amount);
 
     /// @notice Emitted when a new amount of XDEFI is distributed to all locked positions, by some caller.
     event DistributionUpdated(address indexed caller, uint256 amount);
@@ -70,15 +75,15 @@ interface IXDEFIDistribution is IERC721Enumerable {
     /// @notice Emitted when owner proposed an account that can accept ownership.
     event OwnershipProposed(address indexed owner, address indexed pendingOwner);
 
-    /// @notice Emitted when some score fo a token is consumed, resulting in a new token with a lesser score.
-    event ScoreConsumed(uint256 indexed tokenId, uint256 amount, uint256 newTokenId);
-
     /// @notice Emitted when unlocked tokens are merged into one.
-    event TokensMerged(uint256[] mergedTokenIds, uint256 resultingTokenId);
+    event TokensMerged(uint256[] mergedTokenIds, uint256 tokenId, uint256 credits);
 
     /*************/
     /* Constants */
     /*************/
+
+    /// @notice The IERC721Permit domain separator.
+    function DOMAIN_SEPARATOR() external view returns (bytes32 domainSeparator_);
 
     /// @notice The minimum units that can result from a lock of XDEFI.
     function MINIMUM_UNITS() external view returns (uint256 minimumUnits_);
@@ -93,29 +98,26 @@ interface IXDEFIDistribution is IERC721Enumerable {
     /// @notice The multiplier applied to the deposited XDEFI amount to determine the units of a position, and thus its share of future distributions.
     function bonusMultiplierOf(uint256 duration_) external view returns (uint256 bonusMultiplier_);
 
+    /// @notice Returns the consume permit nonce for a token.
+    function consumePermitNonce(uint256 tokenId_) external view returns (uint256 nonce_);
+
+    /// @notice Returns the credits of a token.
+    function creditsOf(uint256 tokenId_) external view returns (uint256 credits_);
+
     /// @notice The amount of XDEFI that is distributable to all currently locked positions.
     function distributableXDEFI() external view returns (uint256 distributableXDEFI_);
 
     /// @notice The contract is no longer allowing locking XDEFI, and is allowing all locked positions to be unlocked effective immediately.
     function inEmergencyMode() external view returns (bool lockingDisabled_);
 
+    /// @notice The account that can set and unset lock periods and transfer ownership of the contract.
+    function owner() external view returns (address owner_);
+
     /// @notice The account that can take ownership of the contract.
     function pendingOwner() external view returns (address pendingOwner_);
 
     /// @notice Returns the position details (`pointsCorrection_` is a value used in the amortized work pattern for token distribution).
-    function positionOf(uint256 tokenId_)
-        external
-        view
-        returns (
-            uint96 units_,
-            uint88 depositedXDEFI_,
-            uint32 expiry_,
-            uint32 created_,
-            uint256 pointsCorrection_
-        );
-
-    /// @notice The account that can set and unset lock periods and transfer ownership of the contract.
-    function owner() external view returns (address owner_);
+    function positionOf(uint256 tokenId_) external view returns (Position memory position_);
 
     /// @notice The amount of XDEFI that was deposited by all currently locked positions.
     function totalDepositedXDEFI() external view returns (uint256 totalDepositedXDEFI_);
@@ -213,34 +215,42 @@ interface IXDEFIDistribution is IERC721Enumerable {
     /* NFT Functions */
     /*****************/
 
-    /// @notice Returns the score, tier, and sequence of an NFT.
+    /// @notice Returns the tier and credits of an NFT.
     function attributesOf(uint256 tokenId_)
         external
         view
         returns (
             uint256 tier_,
-            uint256 score_,
-            uint256 sequence_
+            uint256 credits_,
+            uint256 withdrawable_,
+            uint256 expiry_
         );
 
-    /// @notice Consumes some score from an NFT by burning it and minting a new one with a reduced score.
-    function consume(
+    /// @notice Consumes some credits from an NFT, returning the number of credits left.
+    function consume(uint256 tokenId_, uint256 amount_) external returns (uint256 remainingCredits_);
+
+    /// @notice Consumes some credits from an NFT, with a signed permit from the owner, returning the number of credits left.
+    function consumeWithPermit(
         uint256 tokenId_,
         uint256 amount_,
-        address destination_
-    ) external returns (uint256 newTokenId_);
+        uint256 limit_,
+        uint256 deadline_,
+        uint8 v_,
+        bytes32 r_,
+        bytes32 s_
+    ) external returns (uint256 remainingCredits_);
 
     /// @notice Returns the URI for the contract metadata.
     function contractURI() external view returns (string memory contractURI_);
 
-    /// @notice Returns the score an NFT will have, given some amount locked for some duration.
-    function getScore(uint256 amount_, uint256 duration_) external pure returns (uint256 score_);
+    /// @notice Returns the credits an NFT will have, given some amount locked for some duration.
+    function getCredits(uint256 amount_, uint256 duration_) external pure returns (uint256 credits_);
 
-    /// @notice Returns the tier an NFT will have, given some score, which itself can be determined from `getScore`.
-    function getTier(uint256 score_) external pure returns (uint256 tier_);
+    /// @notice Returns the tier an NFT will have, given some credits, which itself can be determined from `getCredits`.
+    function getTier(uint256 credits_) external pure returns (uint256 tier_);
 
-    /// @notice Burns several unlocked NFTs to mint a new NFT that has their combined score.
-    function merge(uint256[] calldata tokenIds_, address destination_) external returns (uint256 tokenId_);
+    /// @notice Burns several unlocked NFTs to combine their credits into the first.
+    function merge(uint256[] calldata tokenIds_) external returns (uint256 tokenId_, uint256 credits_);
 
     /// @notice Returns the URI for the NFT metadata for a given token ID.
     function tokenURI(uint256 tokenId_) external view returns (string memory tokenURI_);

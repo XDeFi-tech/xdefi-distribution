@@ -2,25 +2,40 @@ const http = require('http');
 const url = require('url');
 const fs = require('fs');
 const path = require('path');
-
-// TODO: add trait/attribute indicating if the NFT is backed by withdrawable XDEFI, and how much
-// TODO: env for `fee_recipient` and chain read api key
+const axios = require('axios');
 
 const host = 'localhost';
 const port = 8000;
+const contract = '0x0000000000000000000000000000000000000000';
 
-const errorResponse = (res) => {
+const CREATURES = {
+    1: { name: 'Ikalgo', file: 'ikalgo' },
+    2: { name: 'Oxtopus', file: 'oxtopus' },
+    3: { name: 'Nautilus', file: 'nautilus' },
+    4: { name: 'Kaurna', file: 'kaurna' },
+    5: { name: 'Haliphron', file: 'haliphron' },
+    6: { name: 'Kanaloa', file: 'kanaloa' },
+    7: { name: 'Taniwha', file: 'taniwha' },
+    8: { name: 'Cthulhu', file: 'cthulhu' },
+    9: { name: 'Yacumama', file: 'yacumama' },
+    10: { name: 'Hafgufa', file: 'hafgufa' },
+    11: { name: 'Akkorokamui', file: 'akkorokamui' },
+    12: { name: 'Nessie', file: 'nessie' },
+    13: { name: 'The Kraken', file: 'thekraken' },
+};
+
+const errorResponse = (res, error = '') => {
     res.writeHead(400);
-    res.end();
+    res.end(error);
 };
 
 const infoResponse = (res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });
 
     const metadata = JSON.stringify({
-        name: 'XDEFI Distribution Creatures',
-        description: 'XDEFI Distribution Creatures are tiered NFTs born from the creation of XDEFI Distribution Positions.',
-        image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/13472.png',
+        name: 'XDEFI Badges',
+        description: 'XDEFI Badges are tiered NFTs born from the creation of XDEFI Distribution Positions.',
+        image: 'http://localhost:8000/media/xdefi.png',
         external_link: 'https://www.xdefi.io/',
         seller_fee_basis_points: 100, // 1% in basis points
         fee_recipient: '0x0000000000000000000000000000000000000000',
@@ -29,65 +44,75 @@ const infoResponse = (res) => {
     res.end(metadata);
 };
 
-const getCreature = (tier) => {
-    if (tier === '1') return { name: 'Ikalgo', file: 'ikalgo' };
+const getAttributes = async (tokenId) => {
+    const {
+        data: { result },
+    } = await axios.post(
+        'http://127.0.0.1:7545',
+        {
+            jsonrpc: '2.0',
+            method: 'eth_call',
+            params: [
+                {
+                    to: contract,
+                    data: `0x09363c44${BigInt(tokenId).toString(16).padStart(64, '0')}`,
+                },
+                'latest',
+            ],
+            id: 1,
+        },
+        {
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        },
+    );
 
-    if (tier === '2') return { name: 'Oxtopus', file: 'oxtopus' };
-
-    if (tier === '3') return { name: 'Nautilus', file: 'nautilus' };
-
-    if (tier === '4') return { name: 'Kaurna', file: 'kaurna' };
-
-    if (tier === '5') return { name: 'Haliphron', file: 'haliphron' };
-
-    if (tier === '6') return { name: 'Kanaloa', file: 'kanaloa' };
-
-    if (tier === '7') return { name: 'Taniwha', file: 'taniwha' };
-
-    if (tier === '8') return { name: 'Cthulhu', file: 'cthulhu' };
-
-    if (tier === '9') return { name: 'Yacumama', file: 'yacumama' };
-
-    if (tier === '10') return { name: 'Hafgufa', file: 'hafgufa' };
-
-    if (tier === '11') return { name: 'Akkorokamui', file: 'akkorokamui' };
-
-    if (tier === '12') return { name: 'Nessie', file: 'nessie' };
-
-    if (tier === '13') return { name: 'The Kraken', file: 'thekraken' };
-
-    throw Error('Invalid Tier');
+    return {
+        tier: BigInt('0x' + result.slice(2, 66)).toString(),
+        credits: BigInt('0x' + result.slice(66, 130)).toString(),
+        withdrawable: BigInt('0x' + result.slice(130, 194)).toString(),
+        expiry: Number(BigInt('0x' + result.slice(194, 258))),
+    };
 };
 
-const getMetadata = (tokenId) => {
-    const mintSequence = (tokenId & (2n ** 128n - 1n)).toString();
-    const score = ((tokenId >> 128n) & (2n ** 124n - 1n)).toString();
-    const tier = (tokenId >> 252n).toString();
-    const { name, file } = getCreature(tier);
+const metadataResponse = async (tokenIdParam, res) => {
+    if (!tokenIdParam || !/^[0-9]+$/.test(tokenIdParam)) return errorResponse(res, 'INVALID TOKEN ID');
 
-    return JSON.stringify({
-        attributes: [
-            { display_type: 'number', trait_type: 'score', value: score },
-            { display_type: 'number', trait_type: 'tier', value: tier },
-            { display_type: 'number', trait_type: 'sequence', value: mintSequence },
-        ],
-        description: `${name} is a tier ${tier} XDEFI Distribution Creature.`,
+    const tokenId = BigInt(tokenIdParam);
+
+    if (tokenId >= 2n ** 256n) return errorResponse(res, 'INVALID TOKEN ID');
+
+    const { tier, credits, withdrawable, expiry } = await getAttributes(tokenId).catch(() => errorResponse(res, 'FETCH FAIL'));
+
+    const creature = CREATURES[tier];
+
+    if (!creature) return errorResponse(res, 'INVALID TIER');
+
+    const { name, file } = creature;
+
+    const attributes = [
+        { display_type: 'number', trait_type: 'Tier', value: tier },
+        { display_type: 'number', trait_type: 'Credits', value: credits },
+        { trait_type: 'Has Locked Position', value: expiry ? 'yes' : 'no' },
+    ];
+
+    if (expiry) {
+        attributes.push({ display_type: 'number', trait_type: 'Withdrawable XDEFI', value: withdrawable });
+        attributes.push({ display_type: 'date', trait_type: 'Lock Expiry', value: expiry });
+    }
+
+    const data = JSON.stringify({
+        attributes,
+        description: `${name} is a tier ${tier} XDEFI Badge`,
         name,
         background_color: '2040DF',
         image: `http://localhost:8000/media/${file}.png`,
         animation_url: `http://localhost:8000/media/${file}.mp4`,
     });
-};
-
-const metadataResponse = (tokenIdParam, res) => {
-    if (!tokenIdParam || !/^[0-9]+$/.test(tokenIdParam)) return errorResponse(res);
-
-    const tokenId = BigInt(tokenIdParam);
-
-    if (tokenId >= 2n ** 256n) return errorResponse(res);
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(getMetadata(tokenId));
+    res.end(data);
 };
 
 const mediaResponse = (fileName, res) => {

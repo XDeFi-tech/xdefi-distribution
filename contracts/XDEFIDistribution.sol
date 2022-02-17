@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity =0.8.10;
+pragma solidity =0.8.12;
 
 import { ERC721, ERC721Enumerable, Strings } from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -15,11 +15,20 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     uint256 internal constant ZERO_UINT256 = uint256(0);
     uint256 internal constant ONE_UINT256 = uint256(1);
     uint256 internal constant ONE_HUNDRED_UINT256 = uint256(100);
-    uint256 internal constant ONE_HUNDRED_TWENTY_EIGHT_UINT256 = uint256(128);
-    uint256 internal constant TWO_HUNDRED_FIFTY_TWO_UINT256 = uint256(252);
 
-    uint256 internal constant ONE_HUNDRED_TWENTY_FOUR_BIT_MASK = uint256(type(uint128).max >> 4);
-    uint256 internal constant ONE_HUNDRED_TWENTY_EIGHT_BIT_MASK = type(uint128).max;
+    uint256 internal constant TIER_1 = uint256(1);
+    uint256 internal constant TIER_2 = uint256(2);
+    uint256 internal constant TIER_3 = uint256(3);
+    uint256 internal constant TIER_4 = uint256(4);
+    uint256 internal constant TIER_5 = uint256(5);
+    uint256 internal constant TIER_6 = uint256(6);
+    uint256 internal constant TIER_7 = uint256(7);
+    uint256 internal constant TIER_8 = uint256(8);
+    uint256 internal constant TIER_9 = uint256(9);
+    uint256 internal constant TIER_10 = uint256(10);
+    uint256 internal constant TIER_11 = uint256(11);
+    uint256 internal constant TIER_12 = uint256(12);
+    uint256 internal constant TIER_13 = uint256(13);
 
     uint256 internal constant TIER_2_THRESHOLD = uint256(150 * 1e18 * 30 days);
     uint256 internal constant TIER_3_THRESHOLD = uint256(300 * 1e18 * 30 days);
@@ -44,7 +53,9 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     uint256 public totalDepositedXDEFI;
     uint256 public totalUnits;
 
-    mapping(uint256 => Position) public positionOf;
+    mapping(uint256 => Position) internal _positionOf;
+
+    mapping(uint256 => uint256) public creditsOf;
 
     mapping(uint256 => uint256) public bonusMultiplierOf; // Scaled by 100, capped at 255 (i.e. 1.1x is 110, 2.55x is 255).
 
@@ -67,12 +78,34 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     uint256 public constant MINIMUM_UNITS = uint256(1e18);
 
-    constructor(address xdefi_, string memory baseURI_) ERC721("XDEFI Badgies", "bXDEFI") {
+    bytes32 public immutable DOMAIN_SEPARATOR;
+
+    mapping(uint256 => uint256) public consumePermitNonce;
+
+    string private constant EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA = "\x19\x01";
+
+    // keccak256('PermitConsume(uint256 tokenId,address consumer,uint256 limit,uint256 nonce,uint256 deadline)');
+    bytes32 private constant CONSUME_PERMIT_SIGNATURE_HASH = bytes32(0xa0a7128942405265cd830695cb06df90c6bfdbbe22677cc592c3d36c3180b079);
+
+    constructor(address xdefi_, string memory baseURI_) ERC721("XDEFI Badges", "bXDEFI") {
         // Set `xdefi` immutable and check that it's not empty.
         if ((xdefi = xdefi_) == ZERO_ADDRESS) revert InvalidToken();
 
         owner = msg.sender;
         baseURI = baseURI_;
+
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                // keccak256(bytes('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')),
+                0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f,
+                // keccak256(bytes('XDEFI Badges')),
+                0x4c62db20b6844e29b4686cc489ff0c3aac678cce88f9352a7a0ef17d53feb307,
+                // keccak256(bytes('1')),
+                0xc89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc6,
+                block.chainid,
+                address(this)
+            )
+        );
     }
 
     /*************/
@@ -159,11 +192,11 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         // Revert if not in emergency mode.
         if (!inEmergencyMode) revert NotInEmergencyMode();
 
-        // Revert if account is not the owner of the token.
-        if (ownerOf(tokenId_) != msg.sender) revert NotTokenOwner();
+        // Revert if caller is not the token's owner, not approved for all the owner's token, and not approved for this specific token.
+        if (!_isApprovedOrOwner(msg.sender, tokenId_)) revert NotApprovedOrOwnerOfToken();
 
         // Fetch position.
-        Position storage position = positionOf[tokenId_];
+        Position storage position = _positionOf[tokenId_];
         uint256 units = uint256(position.units);
         amountUnlocked_ = uint256(position.depositedXDEFI);
 
@@ -179,7 +212,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
             totalUnits -= units;
         }
 
-        delete positionOf[tokenId_];
+        delete _positionOf[tokenId_];
 
         // Send the unlocked XDEFI to the destination. (Don't need SafeERC20 since XDEFI is standard ERC20).
         IERC20(xdefi).transfer(destination_, amountUnlocked_);
@@ -187,7 +220,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     function getBonusMultiplierOf(uint256 tokenId_) external view returns (uint256 bonusMultiplier_) {
         // Fetch position.
-        Position storage position = positionOf[tokenId_];
+        Position storage position = _positionOf[tokenId_];
         uint256 units = uint256(position.units);
         uint256 depositedXDEFI = uint256(position.depositedXDEFI);
 
@@ -217,6 +250,10 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         IEIP2612(xdefi).permit(msg.sender, address(this), amount_, deadline_, v_, r_, s_);
 
         tokenId_ = _lock(amount_, duration_, bonusMultiplier_, destination_);
+    }
+
+    function positionOf(uint256 tokenId_) external view returns (Position memory position_) {
+        position_ = _positionOf[tokenId_];
     }
 
     function relock(
@@ -261,8 +298,8 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         emit DistributionUpdated(msg.sender, increaseInDistributableXDEFI);
     }
 
-    function withdrawableOf(uint256 tokenId_) external view returns (uint256 withdrawableXDEFI_) {
-        Position storage position = positionOf[tokenId_];
+    function withdrawableOf(uint256 tokenId_) public view returns (uint256 withdrawableXDEFI_) {
+        Position storage position = _positionOf[tokenId_];
         withdrawableXDEFI_ = _withdrawableGiven(position.units, position.depositedXDEFI, position.pointsCorrection);
     }
 
@@ -300,100 +337,132 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         view
         returns (
             uint256 tier_,
-            uint256 score_,
-            uint256 sequence_
+            uint256 credits_,
+            uint256 withdrawable_,
+            uint256 expiry_
         )
     {
         // Revert if the token does not exist.
         if (!_exists(tokenId_)) revert TokenDoesNotExist();
 
-        // take the left-most 4 bits as tier, so shift `tokenId_` right by 252 bits, and no need to mask since there are no mote bits to the left.
-        tier_ = tokenId_ >> TWO_HUNDRED_FIFTY_TWO_UINT256;
-
-        score_ = _getScoreFromTokenId(tokenId_);
-
-        // Take the right-most 128 bits of `tokenId_` as the sequence, so just mask it.
-        sequence_ = tokenId_ & ONE_HUNDRED_TWENTY_EIGHT_BIT_MASK;
+        credits_ = creditsOf[tokenId_];
+        tier_ = getTier(credits_);
+        withdrawable_ = withdrawableOf(tokenId_);
+        expiry_ = _positionOf[tokenId_].expiry;
     }
 
-    function consume(
+    function consume(uint256 tokenId_, uint256 amount_) external returns (uint256 remainingCredits_) {
+        // Revert if the caller is not the token's owner, not approved for all the owner's token, and not approved for this specific token.
+        if (!_isApprovedOrOwner(msg.sender, tokenId_)) revert InvalidConsumePermit();
+
+        // Consume some of the token's credits.
+        remainingCredits_ = _consume(tokenId_, amount_, msg.sender);
+    }
+
+    function consumeWithPermit(
         uint256 tokenId_,
         uint256 amount_,
-        address destination_
-    ) external returns (uint256 newTokenId_) {
-        // Revert if position has an expiry property, which means it still exists.
-        if (positionOf[tokenId_].expiry != ZERO_UINT256) revert PositionStillLocked();
+        uint256 limit_,
+        uint256 deadline_,
+        uint8 v_,
+        bytes32 r_,
+        bytes32 s_
+    ) external returns (uint256 remainingCredits_) {
+        // Revert if the permit's deadline has been elapsed.
+        if (block.timestamp >= deadline_) revert ConsumePermitExpired();
 
-        // Use `newTokenId_` as current score for now, as it is unused
-        newTokenId_ = _getScoreFromTokenId(tokenId_);
+        // Revert if the amount being consumed is greater than the permit's defined limit.
+        if (amount_ > limit_) revert BeyondConsumeLimit();
 
-        // Revert if score to decrement is greater than score of nft.
-        if (amount_ > newTokenId_) revert InsufficientScore();
+        // Hash the data as per keccak256("PermitConsume(uint256 tokenId,address consumer,uint256 limit,uint256 nonce,uint256 deadline)");
+        bytes32 digest = keccak256(abi.encode(CONSUME_PERMIT_SIGNATURE_HASH, tokenId_, msg.sender, limit_, consumePermitNonce[tokenId_]++, deadline_));
 
-        // Cache the owner of the token as it will be burned. (This is checks that the token exists.)
-        address tokenOwner = ownerOf(tokenId_);
+        // Get the digest that was to be signed signed.
+        digest = keccak256(abi.encodePacked(EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA, DOMAIN_SEPARATOR, digest));
 
-        // Revert if the caller is not the token's owner, not approved for all the owner's token, and not approved for this specific token.
-        if ((msg.sender != tokenOwner) && !isApprovedForAll(tokenOwner, msg.sender) && (getApproved(tokenId_) != msg.sender)) revert NotApprovedOrOwnerOfToken();
+        address recoveredAddress = ecrecover(digest, v_, r_, s_);
 
-        unchecked {
-            // Generate a new token id with a reduced score. Can be unchecked due to check done above.
-            newTokenId_ = _generateNewTokenId(newTokenId_ - amount_);
-        }
+        // Revert if the account that signed the permit is not the token's owner, not approved for all the owner's token, and not approved for this specific token.
+        if (!_isApprovedOrOwner(recoveredAddress, tokenId_)) revert InvalidConsumePermit();
 
-        // Emit event before state changes and safe mint.
-        emit ScoreConsumed(tokenId_, amount_, newTokenId_);
-
-        // Burn the token and mint a new one with the reduced score.
-        _burn(tokenId_);
-        _safeMint(destination_, newTokenId_);
+        // Consume some of the token's credits.
+        remainingCredits_ = _consume(tokenId_, amount_, msg.sender);
     }
 
     function contractURI() external view returns (string memory contractURI_) {
         contractURI_ = string(abi.encodePacked(baseURI, "info"));
     }
 
-    function getScore(uint256 amount_, uint256 duration_) external pure returns (uint256 score_) {
-        score_ = _getScore(amount_, duration_);
+    function getCredits(uint256 amount_, uint256 duration_) public pure returns (uint256 credits_) {
+        // Credits is implicitly capped at max supply of XDEFI for 10 years locked (less than 2**116).
+        unchecked {
+            credits_ = amount_ * duration_;
+        }
     }
 
-    function getTier(uint256 score_) external pure returns (uint256 tier_) {
-        tier_ = _getTier(score_);
+    function getTier(uint256 credits_) public pure returns (uint256 tier_) {
+        if (credits_ < TIER_2_THRESHOLD) return TIER_1;
+
+        if (credits_ < TIER_3_THRESHOLD) return TIER_2;
+
+        if (credits_ < TIER_4_THRESHOLD) return TIER_3;
+
+        if (credits_ < TIER_5_THRESHOLD) return TIER_4;
+
+        if (credits_ < TIER_6_THRESHOLD) return TIER_5;
+
+        if (credits_ < TIER_7_THRESHOLD) return TIER_6;
+
+        if (credits_ < TIER_8_THRESHOLD) return TIER_7;
+
+        if (credits_ < TIER_9_THRESHOLD) return TIER_8;
+
+        if (credits_ < TIER_10_THRESHOLD) return TIER_9;
+
+        if (credits_ < TIER_11_THRESHOLD) return TIER_10;
+
+        if (credits_ < TIER_12_THRESHOLD) return TIER_11;
+
+        if (credits_ < TIER_13_THRESHOLD) return TIER_12;
+
+        return TIER_13;
     }
 
-    function merge(uint256[] calldata tokenIds_, address destination_) external noReenter returns (uint256 tokenId_) {
+    function merge(uint256[] calldata tokenIds_) external returns (uint256 tokenId_, uint256 credits_) {
         // Revert if trying to merge 0 or 1 tokens, which cannot be done.
         if (tokenIds_.length <= ONE_UINT256) revert MustMergeMultiple();
 
-        // For each NFT, check that it belongs to the caller, burn it, and accumulate the score.
-        for (uint256 i; i < tokenIds_.length; ) {
-            uint256 tokenId = tokenIds_[i];
+        uint256 iterator = tokenIds_.length - 1;
 
-            // Revert if `msg.sender` is not the owner of the token.
-            if (ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
+        // For each NFT from last to second, check that it belongs to the caller, burn it, and accumulate the credits.
+        while (iterator > ZERO_UINT256) {
+            tokenId_ = tokenIds_[iterator];
+
+            // Revert if the caller is not the token's owner, not approved for all the owner's token, and not approved for this specific token.
+            if (!_isApprovedOrOwner(msg.sender, tokenId_)) revert NotApprovedOrOwnerOfToken();
 
             // Revert if position has an expiry property, which means it still exists.
-            if (positionOf[tokenId].expiry != ZERO_UINT256) revert PositionStillLocked();
-
-            _burn(tokenId);
+            if (_positionOf[tokenId_].expiry != ZERO_UINT256) revert PositionStillLocked();
 
             unchecked {
-                // Max score of a previously locked position is `type(uint128).max`, so `score` is reasonably not going to overflow.
-                // Note: Using the so-far-unused variable `tokenId_` for now as `score`.
-                tokenId_ += _getScoreFromTokenId(tokenId);
+                // Max credits of a previously locked position is `type(uint128).max`, so `credits_` is reasonably not going to overflow.
+                credits_ += creditsOf[tokenId_];
 
-                ++i;
+                --iterator;
             }
+
+            // Clear the credits for this token, and burn the token.
+            delete creditsOf[tokenId_];
+            _burn(tokenId_);
         }
 
-        // Generate a new tokenId based on the accumulated score.
-        // Note: `tokenId_` was used as `score` up until, this point.
-        tokenId_ = _generateNewTokenId(tokenId_);
+        // The resulting token id is the first token.
+        tokenId_ = tokenIds_[0];
 
-        emit TokensMerged(tokenIds_, tokenId_);
+        // The total credits merged into the first token is the sum of the first's plus the accumulation of the credits from burned tokens.
+        credits_ = (creditsOf[tokenId_] += credits_);
 
-        // Mine a new NFT to the destinations.
-        _safeMint(destination_, tokenId_);
+        emit TokensMerged(tokenIds_, tokenId_, credits_);
     }
 
     function tokenURI(uint256 tokenId_) public view override(IXDEFIDistribution, ERC721) returns (string memory tokenURI_) {
@@ -406,6 +475,24 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     /**********************/
     /* Internal Functions */
     /**********************/
+
+    function _consume(
+        uint256 tokenId_,
+        uint256 amount_,
+        address consumer_
+    ) internal returns (uint256 remainingCredits_) {
+        remainingCredits_ = creditsOf[tokenId_];
+
+        // Revert if credits to decrement is greater than credits of nft.
+        if (amount_ > remainingCredits_) revert InsufficientCredits();
+
+        unchecked {
+            // Can be unchecked due to check done above.
+            creditsOf[tokenId_] = (remainingCredits_ -= amount_);
+        }
+
+        emit CreditsConsumed(tokenId_, consumer_, amount_);
+    }
 
     function _createLockedPosition(
         uint256 amount_,
@@ -424,14 +511,17 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         // Revert if the bonus multiplier is not at least what was expected.
         if (bonusMultiplier < bonusMultiplier_) revert IncorrectBonusMultiplier();
 
-        // Track deposits.
-        totalDepositedXDEFI += amount_;
-
-        // Generate a token id.
-        tokenId_ = _generateNewTokenId(_getScore(amount_, duration_));
-
-        // Create Position.
         unchecked {
+            // Generate a token id.
+            tokenId_ = ++_tokensMinted;
+
+            // Store credits.
+            creditsOf[tokenId_] = getCredits(amount_, duration_);
+
+            // Track deposits.
+            totalDepositedXDEFI += amount_;
+
+            // The rest creates the locked position.
             uint256 units = (amount_ * bonusMultiplier) / ONE_HUNDRED_UINT256;
 
             // Revert if position will end up with less than define minimum lockable units.
@@ -439,7 +529,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
             totalUnits += units;
 
-            positionOf[tokenId_] = Position({
+            _positionOf[tokenId_] = Position({
                 units: uint96(units), // 240M * 1e18 * 255 can never be larger than a `uint96`.
                 depositedXDEFI: uint88(amount_), // There are only 240M (18 decimals) XDEFI tokens so can never be larger than a `uint88`.
                 expiry: uint32(block.timestamp + duration_), // For many years, block.timestamp + duration_ will never be larger than a `uint32`.
@@ -455,11 +545,11 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     }
 
     function _destroyLockedPosition(address account_, uint256 tokenId_) internal returns (uint256 amountUnlocked_) {
-        // Revert if account is not the owner of the token.
-        if (ownerOf(tokenId_) != account_) revert NotTokenOwner();
+        // Revert if account_ is not the token's owner, not approved for all the owner's token, and not approved for this specific token.
+        if (!_isApprovedOrOwner(account_, tokenId_)) revert NotApprovedOrOwnerOfToken();
 
         // Fetch position.
-        Position storage position = positionOf[tokenId_];
+        Position storage position = _positionOf[tokenId_];
         uint256 units = uint256(position.units);
         uint256 depositedXDEFI = uint256(position.depositedXDEFI);
         uint256 expiry = uint256(position.expiry);
@@ -485,58 +575,9 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
             totalUnits -= units;
         }
 
-        delete positionOf[tokenId_];
+        delete _positionOf[tokenId_];
 
         emit LockPositionWithdrawn(tokenId_, account_, amountUnlocked_);
-    }
-
-    function _generateNewTokenId(uint256 score_) internal returns (uint256 tokenId_) {
-        // Score is implicitly capped at max supply of XDEFI for 10 years locked (less than 2**119).
-        // Total minted NFTs is expected to be reasonably capped at `type(uint128).max`.
-        unchecked {
-            // Right-most 4 bits is tier (1 - 13), next 124 bits is score (max 240M * 1e18 * 10 years in seconds), and left-most 128 bits is a nonce.
-            tokenId_ = (_getTier(score_) << TWO_HUNDRED_FIFTY_TWO_UINT256) | (score_ << ONE_HUNDRED_TWENTY_EIGHT_UINT256) | _tokensMinted++;
-        }
-    }
-
-    function _getScore(uint256 amount_, uint256 duration_) internal pure returns (uint256 score_) {
-        // Score is implicitly capped at max supply of XDEFI for 10 years locked (less than 2**116).
-        unchecked {
-            score_ = amount_ * duration_;
-        }
-    }
-
-    function _getScoreFromTokenId(uint256 tokenId_) internal pure returns (uint256 score_) {
-        // Shift `tokenId_` right by 128 bits and take the right-most 124 bits (since the first 4 bits are the tier).
-        score_ = (tokenId_ >> ONE_HUNDRED_TWENTY_EIGHT_UINT256) & ONE_HUNDRED_TWENTY_FOUR_BIT_MASK;
-    }
-
-    function _getTier(uint256 score_) internal pure returns (uint256 tier_) {
-        if (score_ < TIER_2_THRESHOLD) return uint256(1);
-
-        if (score_ < TIER_3_THRESHOLD) return uint256(2);
-
-        if (score_ < TIER_4_THRESHOLD) return uint256(3);
-
-        if (score_ < TIER_5_THRESHOLD) return uint256(4);
-
-        if (score_ < TIER_6_THRESHOLD) return uint256(5);
-
-        if (score_ < TIER_7_THRESHOLD) return uint256(6);
-
-        if (score_ < TIER_8_THRESHOLD) return uint256(7);
-
-        if (score_ < TIER_9_THRESHOLD) return uint256(8);
-
-        if (score_ < TIER_10_THRESHOLD) return uint256(9);
-
-        if (score_ < TIER_11_THRESHOLD) return uint256(10);
-
-        if (score_ < TIER_12_THRESHOLD) return uint256(11);
-
-        if (score_ < TIER_13_THRESHOLD) return uint256(12);
-
-        return uint256(13);
     }
 
     function _lock(
