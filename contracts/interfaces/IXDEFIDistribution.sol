@@ -6,11 +6,14 @@ import { IERC721Enumerable } from "@openzeppelin/contracts/token/ERC721/extensio
 
 interface IXDEFIDistribution is IERC721Enumerable {
 
+    error BeyondConsumeLimit();
     error CannotUnlock();
+    error ConsumePermitExpired();
     error EmptyArray();
     error IncorrectBonusMultiplier();
     error InsufficientAmountUnlocked();
     error InsufficientScore();
+    error InvalidConsumePermit();
     error InvalidDuration();
     error InvalidMultiplier();
     error InvalidToken();
@@ -21,7 +24,6 @@ interface IXDEFIDistribution is IERC721Enumerable {
     error NoUnitSupply();
     error NotApprovedOrOwnerOfToken();
     error NotInEmergencyMode();
-    error NotTokenOwner();
     error PositionAlreadyUnlocked();
     error PositionStillLocked();
     error TokenDoesNotExist();
@@ -60,7 +62,7 @@ interface IXDEFIDistribution is IERC721Enumerable {
     event DistributionUpdated(address indexed caller, uint256 amount);
 
     /// @notice Emitted when some score fo a token is consumed, resulting in a new token with a lesser score.
-    event ScoreConsumed(uint256 indexed tokenId, uint256 amount, uint256 newTokenId);
+    event ScoreConsumed(uint256 indexed tokenId, address indexed consumer, uint256 amount, uint256 newTokenId);
 
     /// @notice Emitted when unlocked tokens are merged into one.
     event TokensMerged(uint256[] mergedTokenIds, uint256 resultingTokenId);
@@ -78,7 +80,7 @@ interface IXDEFIDistribution is IERC721Enumerable {
     function totalUnits() external view returns (uint256 totalUnits_);
 
     /// @notice Returns the position details (`pointsCorrection_` is a value used in the amortized work pattern for token distribution).
-    function positionOf(uint256 tokenId_) external view returns (uint96 units_, uint88 depositedXDEFI_, uint32 expiry_, uint32 created_, uint256 pointsCorrection_);
+    function positionOf(uint256 tokenId_) external view returns (Position memory position_);
 
     /// @notice The multiplier applied to the deposited XDEFI amount to determine the units of a position, and thus its share of future distributions.
     function bonusMultiplierOf(uint256 duration_) external view returns (uint256 bonusMultiplier_);
@@ -163,7 +165,10 @@ interface IXDEFIDistribution is IERC721Enumerable {
     function attributesOf(uint256 tokenId_) external view returns (uint256 tier_, uint256 score_, uint256 sequence_);
 
     /// @notice Consumes some score from an NFT by burning it and minting a new one with a reduced score.
-    function consume(uint256 tokenId_, uint256 amount_, address destination_) external returns (uint256 newTokenId_);
+    function consume(uint256 tokenId_, uint256 amount_) external returns (uint256 newTokenId_);
+
+    /// @notice Consumes some score from an NFT by burning it and minting a new one with a reduced score, with a signed permit from the owner.
+    function consumeWithPermit(uint256 tokenId_, uint256 amount_, uint256 limit_, uint256 deadline_, uint8 v_, bytes32 r_, bytes32 s_) external returns (uint256 newTokenId_);
 
     /// @notice Returns the URI for the contract metadata.
     function contractURI() external view returns (string memory contractURI_);

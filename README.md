@@ -13,7 +13,7 @@ This contract provides a mechanisms for users to lock XDEFI, resulting in non-fu
 - Rewards are accrued while locked up, with a bonus multiplier based on the lockup time.
 - Accruing of rewards/revenue with the bonus multiplier persists after the lockup time expires. This is fine since the goal is to reward the initial commitment. Further, one would be better off re-locking their withdrawable token, to compound.
 - Upon locking, the NFT locked position is given a “score”, which is some function of amount and lockup time (i.e. `amount * duration`).
-- The NFT's score is embedded in the `tokenId`, so the chain enforces it (first/leftmost 128 bits is the score, last/rightmost 128 bits is a sequential identifier, for uniqueness).
+- The NFT's score is embedded in the `tokenId`, so the chain enforces it (first/leftmost 4 bits is the tier, next 124 bits is the score, last/rightmost 128 bits is a sequential identifier, for uniqueness).
 - The NFT points to some off-chain server that will serve the correct metadata given the NFTs points (i.e. `tokenId`). This is a stateless process off-chain.
 - Once the NFT position has been unlocked and the XDEFI withdrawn, the NFT still exists simply as a transferable loyalty NFT, with its same score, but without any withdrawable XDEFI.
 - Users can combine several of these amount-less loyalty NFTs into one, where the resulting NFT’s points is the sum of those burned to produce it.
