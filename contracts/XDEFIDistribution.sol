@@ -10,7 +10,6 @@ import { IXDEFIDistribution } from "./interfaces/IXDEFIDistribution.sol";
 
 /// @dev Handles distributing XDEFI to NFTs that have locked up XDEFI for various durations of time.
 contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
-
     address internal constant ZERO_ADDRESS = address(0);
 
     uint256 internal constant ZERO_UINT256 = uint256(0);
@@ -48,7 +47,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     mapping(uint256 => Position) public positionOf;
 
-    mapping(uint256 => uint256) public bonusMultiplierOf;  // Scaled by 100, capped at 255 (i.e. 1.1x is 110, 2.55x is 255).
+    mapping(uint256 => uint256) public bonusMultiplierOf; // Scaled by 100, capped at 255 (i.e. 1.1x is 110, 2.55x is 255).
 
     uint256 internal _tokensMinted;
 
@@ -64,12 +63,12 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     bool public inEmergencyMode;
 
-    uint256 internal constant MAX_DURATION = uint256(315360000 seconds);  // 10 years.
-    uint256 internal constant MAX_BONUS_MULTIPLIER = uint256(255);  // 2.55x.
+    uint256 internal constant MAX_DURATION = uint256(315360000 seconds); // 10 years.
+    uint256 internal constant MAX_BONUS_MULTIPLIER = uint256(255); // 2.55x.
 
     uint256 public constant MINIMUM_UNITS = uint256(1e18);
 
-    constructor (address xdefi_, string memory baseURI_) ERC721("XDEFI Badgies", "bXDEFI") {
+    constructor(address xdefi_, string memory baseURI_) ERC721("XDEFI Badgies", "bXDEFI") {
         // Set `xdefi` immutable and check that it's not empty.
         if ((xdefi = xdefi_) == ZERO_ADDRESS) revert InvalidToken();
 
@@ -120,23 +119,18 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     }
 
     function proposeOwnership(address newOwner_) external onlyOwner {
-        emit OwnershipProposed(
-            owner,
-            pendingOwner = newOwner_
-        );
+        emit OwnershipProposed(owner, pendingOwner = newOwner_);
     }
 
     function setBaseURI(string calldata baseURI_) external onlyOwner {
-        emit BaseURISet(
-            baseURI = baseURI_
-        );
+        emit BaseURISet(baseURI = baseURI_);
     }
 
     function setLockPeriods(uint256[] calldata durations_, uint256[] calldata multipliers_) external onlyOwner {
         // Revert if an empty duration array is passed in, which would result in a successful, yet wasted useless transaction.
         if (durations_.length == ZERO_UINT256) revert EmptyArray();
 
-        for (uint256 i; i < durations_.length;) {
+        for (uint256 i; i < durations_.length; ) {
             uint256 duration = durations_[i];
             uint256 multiplier = multipliers_[i];
 
@@ -146,10 +140,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
             // Revert if bonus multiplier is larger than max defined.
             if (multiplier > MAX_BONUS_MULTIPLIER) revert InvalidMultiplier();
 
-            emit LockPeriodSet(
-                duration,
-                bonusMultiplierOf[duration] = multiplier
-            );
+            emit LockPeriodSet(duration, bonusMultiplierOf[duration] = multiplier);
 
             unchecked {
                 ++i;
@@ -200,18 +191,38 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         bonusMultiplier_ = (units * ONE_HUNDRED_UINT256) / depositedXDEFI;
     }
 
-    function lock(uint256 amount_, uint256 duration_, uint256 bonusMultiplier_, address destination_) external noReenter updatePointsPerUnitAtStart returns (uint256 tokenId_) {
+    function lock(
+        uint256 amount_,
+        uint256 duration_,
+        uint256 bonusMultiplier_,
+        address destination_
+    ) external noReenter updatePointsPerUnitAtStart returns (uint256 tokenId_) {
         tokenId_ = _lock(amount_, duration_, bonusMultiplier_, destination_);
     }
 
-    function lockWithPermit(uint256 amount_, uint256 duration_, uint256 bonusMultiplier_, address destination_, uint256 deadline_, uint8 v_, bytes32 r_, bytes32 s_) external noReenter updatePointsPerUnitAtStart returns (uint256 tokenId_) {
+    function lockWithPermit(
+        uint256 amount_,
+        uint256 duration_,
+        uint256 bonusMultiplier_,
+        address destination_,
+        uint256 deadline_,
+        uint8 v_,
+        bytes32 r_,
+        bytes32 s_
+    ) external noReenter updatePointsPerUnitAtStart returns (uint256 tokenId_) {
         // Approve this contract for the amount, using the provided signature.
         IEIP2612(xdefi).permit(msg.sender, address(this), amount_, deadline_, v_, r_, s_);
 
         tokenId_ = _lock(amount_, duration_, bonusMultiplier_, destination_);
     }
 
-    function relock(uint256 tokenId_, uint256 lockAmount_, uint256 duration_, uint256 bonusMultiplier_, address destination_) external noReenter updatePointsPerUnitAtStart updateDistributableAtEnd returns (uint256 amountUnlocked_, uint256 newTokenId_) {
+    function relock(
+        uint256 tokenId_,
+        uint256 lockAmount_,
+        uint256 duration_,
+        uint256 bonusMultiplier_,
+        address destination_
+    ) external noReenter updatePointsPerUnitAtStart updateDistributableAtEnd returns (uint256 amountUnlocked_, uint256 newTokenId_) {
         // Handle the unlock and get the amount of XDEFI eligible to withdraw.
         amountUnlocked_ = _destroyLockedPosition(msg.sender, tokenId_);
 
@@ -256,7 +267,13 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     /* Batch Position Functions */
     /****************************/
 
-    function relockBatch(uint256[] calldata tokenIds_, uint256 lockAmount_, uint256 duration_, uint256 bonusMultiplier_, address destination_) external noReenter updatePointsPerUnitAtStart updateDistributableAtEnd returns (uint256 amountUnlocked_, uint256 newTokenId_) {
+    function relockBatch(
+        uint256[] calldata tokenIds_,
+        uint256 lockAmount_,
+        uint256 duration_,
+        uint256 bonusMultiplier_,
+        address destination_
+    ) external noReenter updatePointsPerUnitAtStart updateDistributableAtEnd returns (uint256 amountUnlocked_, uint256 newTokenId_) {
         // Handle the unlocks and get the amount of XDEFI eligible to withdraw.
         amountUnlocked_ = _unlockBatch(msg.sender, tokenIds_);
 
@@ -275,7 +292,15 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     /* NFT Functions */
     /*****************/
 
-    function attributesOf(uint256 tokenId_) external view returns (uint256 tier_, uint256 score_, uint256 sequence_) {
+    function attributesOf(uint256 tokenId_)
+        external
+        view
+        returns (
+            uint256 tier_,
+            uint256 score_,
+            uint256 sequence_
+        )
+    {
         // Revert if the token does not exist.
         if (!_exists(tokenId_)) revert TokenDoesNotExist();
 
@@ -288,7 +313,11 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         sequence_ = tokenId_ & ONE_HUNDRED_TWENTY_EIGHT_BIT_MASK;
     }
 
-    function consume(uint256 tokenId_, uint256 amount_, address destination_) external returns (uint256 newTokenId_) {
+    function consume(
+        uint256 tokenId_,
+        uint256 amount_,
+        address destination_
+    ) external returns (uint256 newTokenId_) {
         // Revert if position has an expiry property, which means it still exists.
         if (positionOf[tokenId_].expiry != ZERO_UINT256) revert PositionStillLocked();
 
@@ -302,11 +331,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         address tokenOwner = ownerOf(tokenId_);
 
         // Revert if the caller is not the token's owner, not approved for all the owner's token, and not approved for this specific token.
-        if (
-            (msg.sender != tokenOwner) &&
-            !isApprovedForAll(tokenOwner, msg.sender) &&
-            (getApproved(tokenId_) != msg.sender)
-        ) revert NotApprovedOrOwnerOfToken();
+        if ((msg.sender != tokenOwner) && !isApprovedForAll(tokenOwner, msg.sender) && (getApproved(tokenId_) != msg.sender)) revert NotApprovedOrOwnerOfToken();
 
         unchecked {
             // Generate a new token id with a reduced score. Can be unchecked due to check done above.
@@ -338,7 +363,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         if (tokenIds_.length <= ONE_UINT256) revert MustMergeMultiple();
 
         // For each NFT, check that it belongs to the caller, burn it, and accumulate the score.
-        for (uint256 i; i < tokenIds_.length;) {
+        for (uint256 i; i < tokenIds_.length; ) {
             uint256 tokenId = tokenIds_[i];
 
             // Revert if `msg.sender` is not the owner of the token.
@@ -379,7 +404,12 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
     /* Internal Functions */
     /**********************/
 
-    function _createLockedPosition(uint256 amount_, uint256 duration_, uint256 bonusMultiplier_, address destination_) internal returns (uint256 tokenId_) {
+    function _createLockedPosition(
+        uint256 amount_,
+        uint256 duration_,
+        uint256 bonusMultiplier_,
+        address destination_
+    ) internal returns (uint256 tokenId_) {
         // Revert is locking has been disabled.
         if (inEmergencyMode) revert LockingIsDisabled();
 
@@ -406,14 +436,13 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
             totalUnits += units;
 
-            positionOf[tokenId_] =
-                Position({
-                    units: uint96(units),  // 240M * 1e18 * 255 can never be larger than a `uint96`.
-                    depositedXDEFI: uint88(amount_),  // There are only 240M (18 decimals) XDEFI tokens so can never be larger than a `uint88`.
-                    expiry: uint32(block.timestamp + duration_),  // For many years, block.timestamp + duration_ will never be larger than a `uint32`.
-                    created: uint32(block.timestamp),  // For many years, block.timestamp will never be larger than a `uint32`.
-                    pointsCorrection: _pointsPerUnit * units  // _pointsPerUnit * units cannot be greater than a `uint256`.
-                });
+            positionOf[tokenId_] = Position({
+                units: uint96(units), // 240M * 1e18 * 255 can never be larger than a `uint96`.
+                depositedXDEFI: uint88(amount_), // There are only 240M (18 decimals) XDEFI tokens so can never be larger than a `uint88`.
+                expiry: uint32(block.timestamp + duration_), // For many years, block.timestamp + duration_ will never be larger than a `uint32`.
+                created: uint32(block.timestamp), // For many years, block.timestamp will never be larger than a `uint32`.
+                pointsCorrection: _pointsPerUnit * units // _pointsPerUnit * units cannot be greater than a `uint256`.
+            });
         }
 
         emit LockPositionCreated(tokenId_, destination_, amount_, duration_);
@@ -507,7 +536,12 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         score_ = (tokenId_ >> ONE_HUNDRED_TWENTY_EIGHT_UINT256) & ONE_HUNDRED_TWENTY_FOUR_BIT_MASK;
     }
 
-    function _lock(uint256 amount_, uint256 duration_, uint256 bonusMultiplier_, address destination_) internal returns (uint256 tokenId_) {
+    function _lock(
+        uint256 amount_,
+        uint256 duration_,
+        uint256 bonusMultiplier_,
+        address destination_
+    ) internal returns (uint256 tokenId_) {
         // Lock the XDEFI in the contract. (Don't need SafeERC20 since XDEFI is standard ERC20).
         IERC20(xdefi).transferFrom(msg.sender, address(this), amount_);
 
@@ -515,7 +549,13 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         tokenId_ = _createLockedPosition(amount_, duration_, bonusMultiplier_, destination_);
     }
 
-    function _relock(uint256 lockAmount_, uint256 amountUnlocked_, uint256 duration_, uint256 bonusMultiplier_, address destination_) internal returns (uint256 tokenId_) {
+    function _relock(
+        uint256 lockAmount_,
+        uint256 amountUnlocked_,
+        uint256 duration_,
+        uint256 bonusMultiplier_,
+        address destination_
+    ) internal returns (uint256 tokenId_) {
         // Throw convenient error if trying to re-lock more than was unlocked. `amountUnlocked_ - lockAmount_` cannot revert below now.
         if (lockAmount_ > amountUnlocked_) revert InsufficientAmountUnlocked();
 
@@ -535,7 +575,7 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         if (tokenIds_.length == ZERO_UINT256) revert EmptyArray();
 
         // Handle the unlock for each position and accumulate the unlocked amount.
-        for (uint256 i; i < tokenIds_.length;) {
+        for (uint256 i; i < tokenIds_.length; ) {
             unchecked {
                 amountUnlocked_ += _destroyLockedPosition(account_, tokenIds_[i]);
 
@@ -564,20 +604,16 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         }
     }
 
-    function _withdrawableGiven(uint256 units_, uint256 depositedXDEFI_, uint256 pointsCorrection_) internal view returns (uint256 withdrawableXDEFI_) {
+    function _withdrawableGiven(
+        uint256 units_,
+        uint256 depositedXDEFI_,
+        uint256 pointsCorrection_
+    ) internal view returns (uint256 withdrawableXDEFI_) {
         // NOTE: In a worst case (120k XDEFI locked at 2.55x bonus, 120k XDEFI reward, cycled 1 million times) `_pointsPerUnit * units_` is smaller than 2**248.
         //       Since `pointsCorrection_` is always less than `_pointsPerUnit * units_`, (because `_pointsPerUnit` only grows) there is no underflow on the subtraction.
         //       Finally, `depositedXDEFI_` is at most 88 bits, so after the division by a very large `POINTS_MULTIPLIER`, this doesn't need to be checked.
         unchecked {
-            withdrawableXDEFI_ =
-                (
-                    (
-                        (
-                            _pointsPerUnit * units_
-                        ) - pointsCorrection_
-                    ) >> POINTS_MULTIPLIER_BITS
-                ) + depositedXDEFI_;
+            withdrawableXDEFI_ = (((_pointsPerUnit * units_) - pointsCorrection_) >> POINTS_MULTIPLIER_BITS) + depositedXDEFI_;
         }
     }
-
 }

@@ -1,15 +1,15 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { expect } = require('chai');
+const { ethers } = require('hardhat');
 
 const totalSupply = '240000000000000000000000000';
 
 const toWei = (value, add = 0, sub = 0) => (BigInt(value) * 1_000_000_000_000_000_000n + BigInt(add) - BigInt(sub)).toString();
 
-const getPointsCorrection = (old, newXdefi, totalUnits) => BigInt(old) + (BigInt(newXdefi) * (2n ** 128n)) / BigInt(totalUnits);
+const getPointsCorrection = (old, newXdefi, totalUnits) => BigInt(old) + (BigInt(newXdefi) * 2n ** 128n) / BigInt(totalUnits);
 
 const randomIntInclusive = (min, max) => Math.floor(Math.random() * (max - min) + min);
 
-describe("XDEFIDistributionEdgeCases", () => {
+describe('XDEFIDistributionEdgeCases', () => {
     let XDEFI;
     let XDEFIDistribution;
     let god;
@@ -33,11 +33,13 @@ describe("XDEFIDistributionEdgeCases", () => {
     beforeEach(async () => {
         [god, account1, account2, account3] = await ethers.getSigners();
 
-        XDEFI = await (await (await ethers.getContractFactory("XDEFI")).deploy("XDEFI", "XDEFI", totalSupply)).deployed();
-        XDEFIDistribution = await (await (await ethers.getContractFactory("XDEFIDistribution")).deploy(XDEFI.address, "https://www.xdefi.io/nfts/")).deployed();
+        XDEFI = await (await (await ethers.getContractFactory('XDEFI')).deploy('XDEFI', 'XDEFI', totalSupply)).deployed();
+        XDEFIDistribution = await (
+            await (await ethers.getContractFactory('XDEFIDistribution')).deploy(XDEFI.address, 'https://www.xdefi.io/nfts/')
+        ).deployed();
     });
 
-    it("Maximal lock and minimal reward (cycles)", async () => {
+    it('Maximal lock and minimal reward (cycles)', async () => {
         // Set 0-day lockup bonus multiplier to 2.55x
         await (await XDEFIDistribution.setLockPeriods([1], [255])).wait();
 
@@ -73,7 +75,7 @@ describe("XDEFIDistributionEdgeCases", () => {
         }
     });
 
-    it("Minimal lock and maximal reward (cycles)", async () => {
+    it('Minimal lock and maximal reward (cycles)', async () => {
         // Set 0-day lockup bonus multiplier to 2.55x
         await (await XDEFIDistribution.setLockPeriods([1], [255])).wait();
 
@@ -112,7 +114,7 @@ describe("XDEFIDistributionEdgeCases", () => {
         }
     });
 
-    it("Half lock and half reward (cycles)", async () => {
+    it('Half lock and half reward (cycles)', async () => {
         // Set 0-day lockup bonus multiplier to 2.55x
         await (await XDEFIDistribution.setLockPeriods([1], [255])).wait();
 
@@ -148,7 +150,7 @@ describe("XDEFIDistributionEdgeCases", () => {
         }
     });
 
-    it.skip("Checking that pointsPerUnit * units > pointsCorrection", async () => {
+    it.skip('Checking that pointsPerUnit * units > pointsCorrection', async () => {
         // Set 0-day lockup bonus multiplier to 2.55x
         await (await XDEFIDistribution.setLockPeriods([1], [255])).wait();
 

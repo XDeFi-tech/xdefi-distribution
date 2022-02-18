@@ -1,11 +1,11 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { expect } = require('chai');
+const { ethers } = require('hardhat');
 
 const totalSupply = '240000000000000000000000000';
 
 const toWei = (value, add = 0, sub = 0) => (BigInt(value) * 1_000_000_000_000_000_000n + BigInt(add) - BigInt(sub)).toString();
 
-describe("XDEFIDistributionHelper", () => {
+describe('XDEFIDistributionHelper', () => {
     const durations = [1, 86400, 172800];
     const bonusMultipliers = [100, 120, 150];
 
@@ -33,9 +33,11 @@ describe("XDEFIDistributionHelper", () => {
     beforeEach(async () => {
         [god, account1, account2, account3] = await ethers.getSigners();
 
-        XDEFI = await (await (await ethers.getContractFactory("XDEFI")).deploy("XDEFI", "XDEFI", totalSupply)).deployed();
-        XDEFIDistribution = await (await (await ethers.getContractFactory("XDEFIDistribution")).deploy(XDEFI.address, "https://www.xdefi.io/nfts/")).deployed();
-        XDEFIDistributionHelper = await (await (await ethers.getContractFactory("XDEFIDistributionHelper")).deploy()).deployed();
+        XDEFI = await (await (await ethers.getContractFactory('XDEFI')).deploy('XDEFI', 'XDEFI', totalSupply)).deployed();
+        XDEFIDistribution = await (
+            await (await ethers.getContractFactory('XDEFIDistribution')).deploy(XDEFI.address, 'https://www.xdefi.io/nfts/')
+        ).deployed();
+        XDEFIDistributionHelper = await (await (await ethers.getContractFactory('XDEFIDistributionHelper')).deploy()).deployed();
 
         // Setup some bonus multipliers (0 days with 1x, 1 day with 1.2x, 2 days with 1.5x)
         await (await XDEFIDistribution.setLockPeriods(durations, bonusMultipliers)).wait();
@@ -46,7 +48,7 @@ describe("XDEFIDistributionHelper", () => {
         await (await XDEFI.transfer(account3.address, toWei(1000))).wait();
     });
 
-    it("Can fetch all XDEFIDistribution data for an account", async () => {
+    it('Can fetch all XDEFIDistribution data for an account', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -63,22 +65,26 @@ describe("XDEFIDistributionHelper", () => {
         // Get all data for account 1's positions.
         expect(await XDEFIDistribution.balanceOf(account1.address)).to.equal(3);
 
-        await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address)
-            .then(tokenIds => {
-                expect(tokenIds.map(t => t.toString())).to.deep.equal([nft1, nft2, nft3]);
-            });
+        await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address).then((tokenIds) => {
+            expect(tokenIds.map((t) => t.toString())).to.deep.equal([nft1, nft2, nft3]);
+        });
 
-        await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address)
-            .then(async ({ tokenIds_, positions_, withdrawables_ }) => {
-                expect(tokenIds_.map(t => t.toString())).to.deep.equal([nft1, nft2, nft3]);
+        await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address).then(
+            async ({ tokenIds_, positions_, withdrawables_ }) => {
+                expect(tokenIds_.map((t) => t.toString())).to.deep.equal([nft1, nft2, nft3]);
 
                 expect(positions_.length).to.equal(3);
-                expect(positions_[0]).to.deep.equal((await XDEFIDistribution.positionOf(nft1)));
-                expect(positions_[1]).to.deep.equal((await XDEFIDistribution.positionOf(nft2)));
-                expect(positions_[2]).to.deep.equal((await XDEFIDistribution.positionOf(nft3)));
+                expect(positions_[0]).to.deep.equal(await XDEFIDistribution.positionOf(nft1));
+                expect(positions_[1]).to.deep.equal(await XDEFIDistribution.positionOf(nft2));
+                expect(positions_[2]).to.deep.equal(await XDEFIDistribution.positionOf(nft3));
 
-                expect(withdrawables_.map(x => x.toString())).to.deep.equal([toWei(1270, '270270270270270270', 0), toWei(1324, '324324324324324324', 0), toWei(1405, '405405405405405405', 0)]);
-            });
+                expect(withdrawables_.map((x) => x.toString())).to.deep.equal([
+                    toWei(1270, '270270270270270270', 0),
+                    toWei(1324, '324324324324324324', 0),
+                    toWei(1405, '405405405405405405', 0),
+                ]);
+            }
+        );
 
         // Position 1 unlocks
         await (await XDEFIDistribution.connect(account1).unlock(nft1, account1.address)).wait();
@@ -86,21 +92,24 @@ describe("XDEFIDistributionHelper", () => {
         // Get all data for account 1's positions.
         expect(await XDEFIDistribution.balanceOf(account1.address)).to.equal(3);
 
-        await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address)
-            .then(tokenIds => {
-                expect(tokenIds.map(t => t.toString())).to.deep.equal([nft1, nft2, nft3]);
-            });
+        await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address).then((tokenIds) => {
+            expect(tokenIds.map((t) => t.toString())).to.deep.equal([nft1, nft2, nft3]);
+        });
 
-        await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address)
-            .then(async ({ tokenIds_, positions_, withdrawables_ }) => {
-                expect(tokenIds_.map(t => t.toString())).to.deep.equal([nft2, nft3]);
+        await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address).then(
+            async ({ tokenIds_, positions_, withdrawables_ }) => {
+                expect(tokenIds_.map((t) => t.toString())).to.deep.equal([nft2, nft3]);
 
                 expect(positions_.length).to.equal(2);
-                expect(positions_[0]).to.deep.equal((await XDEFIDistribution.positionOf(nft2)));
-                expect(positions_[1]).to.deep.equal((await XDEFIDistribution.positionOf(nft3)));
+                expect(positions_[0]).to.deep.equal(await XDEFIDistribution.positionOf(nft2));
+                expect(positions_[1]).to.deep.equal(await XDEFIDistribution.positionOf(nft3));
 
-                expect(withdrawables_.map(x => x.toString())).to.deep.equal([toWei(1324, '324324324324324324', 0), toWei(1405, '405405405405405405', 0)]);
-            });
+                expect(withdrawables_.map((x) => x.toString())).to.deep.equal([
+                    toWei(1324, '324324324324324324', 0),
+                    toWei(1405, '405405405405405405', 0),
+                ]);
+            }
+        );
 
         // Position 2 unlocks
         await hre.ethers.provider.send('evm_increaseTime', [86400]);
@@ -109,20 +118,20 @@ describe("XDEFIDistributionHelper", () => {
         // Get all data for account 1's positions.
         expect(await XDEFIDistribution.balanceOf(account1.address)).to.equal(3);
 
-        await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address)
-            .then(tokenIds => {
-                expect(tokenIds.map(t => t.toString())).to.deep.equal([nft1, nft2, nft3]);
-            });
+        await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address).then((tokenIds) => {
+            expect(tokenIds.map((t) => t.toString())).to.deep.equal([nft1, nft2, nft3]);
+        });
 
-        await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address)
-            .then(async ({ tokenIds_, positions_, withdrawables_ }) => {
-                expect(tokenIds_.map(t => t.toString())).to.deep.equal([nft3]);
+        await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address).then(
+            async ({ tokenIds_, positions_, withdrawables_ }) => {
+                expect(tokenIds_.map((t) => t.toString())).to.deep.equal([nft3]);
 
                 expect(positions_.length).to.equal(1);
-                expect(positions_[0]).to.deep.equal((await XDEFIDistribution.positionOf(nft3)));
+                expect(positions_[0]).to.deep.equal(await XDEFIDistribution.positionOf(nft3));
 
-                expect(withdrawables_.map(x => x.toString())).to.deep.equal([toWei(1405, '405405405405405405', 0)]);
-            });
+                expect(withdrawables_.map((x) => x.toString())).to.deep.equal([toWei(1405, '405405405405405405', 0)]);
+            }
+        );
 
         // Position 3 unlocks
         await hre.ethers.provider.send('evm_increaseTime', [86400]);
@@ -131,18 +140,18 @@ describe("XDEFIDistributionHelper", () => {
         // Get all data for account 1's positions.
         expect(await XDEFIDistribution.balanceOf(account1.address)).to.equal(3);
 
-        await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address)
-            .then(tokenIds => {
-                expect(tokenIds.map(t => t.toString())).to.deep.equal([nft1, nft2, nft3]);
-            });
+        await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address).then((tokenIds) => {
+            expect(tokenIds.map((t) => t.toString())).to.deep.equal([nft1, nft2, nft3]);
+        });
 
-        await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address)
-            .then(async ({ tokenIds_, positions_, withdrawables_ }) => {
-                expect(tokenIds_.map(t => t.toString())).to.deep.equal([]);
+        await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address).then(
+            async ({ tokenIds_, positions_, withdrawables_ }) => {
+                expect(tokenIds_.map((t) => t.toString())).to.deep.equal([]);
 
                 expect(positions_.length).to.equal(0);
 
-                expect(withdrawables_.map(x => x.toString())).to.deep.equal([]);
-            });
+                expect(withdrawables_.map((x) => x.toString())).to.deep.equal([]);
+            }
+        );
     });
 });

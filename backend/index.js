@@ -1,4 +1,4 @@
-const http = require("http");
+const http = require('http');
 const url = require('url');
 const fs = require('fs');
 const path = require('path');
@@ -11,19 +11,19 @@ const port = 8000;
 
 const errorResponse = (res) => {
     res.writeHead(400);
-    res.end()
+    res.end();
 };
 
 const infoResponse = (res) => {
-    res.writeHead(200, { "Content-Type": "application/json" });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
 
     const metadata = JSON.stringify({
-        name: "XDEFI Distribution Creatures",
-        description: "XDEFI Distribution Creatures are tiered NFTs born from the creation of XDEFI Distribution Positions.",
-        image: "https://s2.coinmarketcap.com/static/img/coins/64x64/13472.png",
-        external_link: "https://www.xdefi.io/",
-        seller_fee_basis_points: 100,  // 1% in basis points
-        fee_recipient: "0x0000000000000000000000000000000000000000"
+        name: 'XDEFI Distribution Creatures',
+        description: 'XDEFI Distribution Creatures are tiered NFTs born from the creation of XDEFI Distribution Positions.',
+        image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/13472.png',
+        external_link: 'https://www.xdefi.io/',
+        seller_fee_basis_points: 100, // 1% in basis points
+        fee_recipient: '0x0000000000000000000000000000000000000000',
     });
 
     res.end(metadata);
@@ -60,8 +60,8 @@ const getCreature = (tier) => {
 };
 
 const getMetadata = (tokenId) => {
-    const mintSequence = (tokenId & ((2n ** 128n) - 1n)).toString();
-    const score = ((tokenId >> 128n) & ((2n ** 124n) - 1n)).toString();
+    const mintSequence = (tokenId & (2n ** 128n - 1n)).toString();
+    const score = ((tokenId >> 128n) & (2n ** 124n - 1n)).toString();
     const tier = (tokenId >> 252n).toString();
     const { name, file } = getCreature(tier);
 
@@ -73,7 +73,7 @@ const getMetadata = (tokenId) => {
         ],
         description: `${name} is a tier ${tier} XDEFI Distribution Creature.`,
         name,
-        background_color: "2040DF",
+        background_color: '2040DF',
         image: `http://localhost:8000/media/${file}.png`,
         animation_url: `http://localhost:8000/media/${file}.mp4`,
     });
@@ -84,9 +84,9 @@ const metadataResponse = (tokenIdParam, res) => {
 
     const tokenId = BigInt(tokenIdParam);
 
-    if (tokenId >= (2n ** 256n)) return errorResponse(res);
+    if (tokenId >= 2n ** 256n) return errorResponse(res);
 
-    res.writeHead(200, { "Content-Type": "application/json" });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(getMetadata(tokenId));
 };
 

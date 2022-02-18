@@ -5,7 +5,6 @@ pragma solidity =0.8.10;
 import { IXDEFIDistribution } from "./IXDEFIDistribution.sol";
 
 interface IXDEFIDistributionLike {
-
     struct Position {
         uint96 units;
         uint88 depositedXDEFI;
@@ -21,13 +20,17 @@ interface IXDEFIDistributionLike {
     function positionOf(uint256 tokenId_) external view returns (Position memory position_);
 
     function withdrawableOf(uint256 tokenId_) external view returns (uint256 withdrawableXDEFI_);
-
 }
 
 interface IXDEFIDistributionHelper {
-
     function getAllTokensForAccount(address xdefiDistribution_, address account_) external view returns (uint256[] memory tokenIds_);
 
-    function getAllLockedPositionsForAccount(address xdefiDistribution_, address account_) external view returns (uint256[] memory tokenIds_, IXDEFIDistributionLike.Position[] memory positions_, uint256[] memory withdrawables_);
-
+    function getAllLockedPositionsForAccount(address xdefiDistribution_, address account_)
+        external
+        view
+        returns (
+            uint256[] memory tokenIds_,
+            IXDEFIDistributionLike.Position[] memory positions_,
+            uint256[] memory withdrawables_
+        );
 }
