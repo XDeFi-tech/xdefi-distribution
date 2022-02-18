@@ -14,7 +14,6 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
 
     uint256 internal constant ZERO_UINT256 = uint256(0);
     uint256 internal constant ONE_UINT256 = uint256(1);
-    uint256 internal constant TWO_UINT256 = uint256(2);
     uint256 internal constant ONE_HUNDRED_UINT256 = uint256(100);
     uint256 internal constant ONE_HUNDRED_TWENTY_EIGHT_UINT256 = uint256(128);
     uint256 internal constant TWO_HUNDRED_FIFTY_TWO_UINT256 = uint256(252);
@@ -75,6 +74,10 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         owner = msg.sender;
         baseURI = baseURI_;
     }
+
+    /*************/
+    /* Modifiers */
+    /*************/
 
     modifier onlyOwner() {
         if (owner != msg.sender) revert Unauthorized();
@@ -503,6 +506,11 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         }
     }
 
+    function _getScoreFromTokenId(uint256 tokenId_) internal pure returns (uint256 score_) {
+        // Shift `tokenId_` right by 128 bits and take the right-most 124 bits (since the first 4 bits are the tier).
+        score_ = (tokenId_ >> ONE_HUNDRED_TWENTY_EIGHT_UINT256) & ONE_HUNDRED_TWENTY_FOUR_BIT_MASK;
+    }
+
     function _getTier(uint256 score_) internal pure returns (uint256 tier_) {
         if (score_ < TIER_2_THRESHOLD) return uint256(1);
 
@@ -529,11 +537,6 @@ contract XDEFIDistribution is IXDEFIDistribution, ERC721Enumerable {
         if (score_ < TIER_13_THRESHOLD) return uint256(12);
 
         return uint256(13);
-    }
-
-    function _getScoreFromTokenId(uint256 tokenId_) internal pure returns (uint256 score_) {
-        // Shift `tokenId_` right by 128 bits and take the right-most 124 bits (since the first 4 bits are the tier).
-        score_ = (tokenId_ >> ONE_HUNDRED_TWENTY_EIGHT_UINT256) & ONE_HUNDRED_TWENTY_FOUR_BIT_MASK;
     }
 
     function _lock(
