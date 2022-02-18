@@ -3,7 +3,6 @@
 pragma solidity =0.8.10;
 
 interface IERC20 {
-
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
     event Transfer(address indexed from, address indexed to, uint256 value);
@@ -31,11 +30,9 @@ interface IERC20 {
     function symbol() external view returns (string memory symbol_);
 
     function totalSupply() external view returns (uint256 totalSupply_);
-
 }
 
 abstract contract Context {
-
     function _msgData() internal view virtual returns (bytes memory msgData_) {
         this;
         msgData_ = msg.data;
@@ -44,17 +41,15 @@ abstract contract Context {
     function _msgSender() internal view virtual returns (address payable msgSender_) {
         msgSender_ = payable(msg.sender);
     }
-
 }
 
 contract ERC20 is IERC20, Context {
-
     bytes32 public DOMAIN_SEPARATOR;
 
     mapping(address => uint256) private _balances;
     mapping(address => uint256) public nonces;
 
-    mapping (address => mapping (address => uint256)) private _allowances;
+    mapping(address => mapping(address => uint256)) private _allowances;
 
     uint256 private _totalSupply;
 
@@ -129,14 +124,7 @@ contract ERC20 is IERC20, Context {
         require(owner_ != address(0), "ERC20: Owner cannot be 0");
         require(block.timestamp < deadline_, "ERC20: Expired");
 
-        bytes32 digest =
-            keccak256(
-                abi.encodePacked(
-                    EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA,
-                    DOMAIN_SEPARATOR,
-                    keccak256(abi.encode(PERMIT_SIGNATURE_HASH, owner_, spender_, value_, nonces[owner_]++, deadline_))
-                )
-            );
+        bytes32 digest = keccak256(abi.encodePacked(EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA, DOMAIN_SEPARATOR, keccak256(abi.encode(PERMIT_SIGNATURE_HASH, owner_, spender_, value_, nonces[owner_]++, deadline_))));
 
         address recoveredAddress = ecrecover(digest, v_, r_, s_);
         require(recoveredAddress == owner_, "ERC20: Invalid Signature");
@@ -144,7 +132,11 @@ contract ERC20 is IERC20, Context {
         _approve(owner_, spender_, value_);
     }
 
-    function transferFrom(address sender_, address recipient_, uint256 amount_) public virtual returns (bool success_) {
+    function transferFrom(
+        address sender_,
+        address recipient_,
+        uint256 amount_
+    ) public virtual returns (bool success_) {
         _transfer(sender_, recipient_, amount_);
         _approve(sender_, _msgSender(), _allowances[sender_][_msgSender()] - amount_);
         success_ = true;
@@ -160,7 +152,11 @@ contract ERC20 is IERC20, Context {
         success_ = true;
     }
 
-    function _transfer(address sender_, address recipient_, uint256 amount_) internal virtual {
+    function _transfer(
+        address sender_,
+        address recipient_,
+        uint256 amount_
+    ) internal virtual {
         require(sender_ != address(0), "ERC20: transfer from the zero address");
         require(recipient_ != address(0), "ERC20: transfer to the zero address");
 
@@ -194,7 +190,11 @@ contract ERC20 is IERC20, Context {
         emit Transfer(account_, address(0), amount_);
     }
 
-    function _approve(address owner_, address spender_, uint256 amount_) internal virtual {
+    function _approve(
+        address owner_,
+        address spender_,
+        uint256 amount_
+    ) internal virtual {
         require(owner_ != address(0), "ERC20: approve from the zero address");
         require(spender_ != address(0), "ERC20: approve to the zero address");
 
@@ -205,15 +205,20 @@ contract ERC20 is IERC20, Context {
         _decimals = decimals_;
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual {}
-
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual {}
 }
 
 contract XDEFI is ERC20 {
-
-    constructor(string memory name_, string memory symbol_, uint256 initialSupply_) {
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        uint256 initialSupply_
+    ) {
         _initERC20(name_, symbol_);
         _mint(msg.sender, initialSupply_);
     }
-
 }

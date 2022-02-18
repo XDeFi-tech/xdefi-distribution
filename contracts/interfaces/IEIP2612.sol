@@ -3,7 +3,6 @@
 pragma solidity =0.8.10;
 
 interface IEIP2612 {
-
     function permit(
         address owner_,
         address spender_,
@@ -13,5 +12,4 @@ interface IEIP2612 {
         bytes32 r_,
         bytes32 s_
     ) external;
-
 }

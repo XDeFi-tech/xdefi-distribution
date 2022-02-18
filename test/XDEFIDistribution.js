@@ -1,8 +1,8 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { expect } = require('chai');
+const { ethers } = require('hardhat');
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-const MAX_UINT256 = (2n ** 256n) - 1n;
+const MAX_UINT256 = 2n ** 256n - 1n;
 
 const totalSupply = '240000000000000000000000000';
 
@@ -11,7 +11,7 @@ const PERMIT_SIGNATURE_HASH = '0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114
 
 const toWei = (value, add = 0, sub = 0) => (BigInt(value) * 1_000_000_000_000_000_000n + BigInt(add) - BigInt(sub)).toString();
 
-describe("XDEFIDistribution", () => {
+describe('XDEFIDistribution', () => {
     const maxDeadline = MAX_UINT256.toString();
 
     const durations = [1, 86400, 172800];
@@ -38,7 +38,7 @@ describe("XDEFIDistribution", () => {
         const subDataDigest = ethers.utils.keccak256(subData);
 
         const dataDigest = ethers.utils.solidityKeccak256(
-            ['string', 'bytes32', 'bytes32'] ,
+            ['string', 'bytes32', 'bytes32'],
             [EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA, domainSeparator, subDataDigest]
         );
 
@@ -64,7 +64,18 @@ describe("XDEFIDistribution", () => {
         const { v, r, s } = createPermitSignature(wallet, XDEFIDistribution.address, amount, nonce, deadline);
 
         await (await XDEFI.connect(wallet).approve(XDEFIDistribution.address, amount)).wait();
-        await (await XDEFIDistribution.connect(wallet).lockWithPermit(amount, duration, bonusMultiplier, destination.address, deadline, v, r, s)).wait();
+        await (
+            await XDEFIDistribution.connect(wallet).lockWithPermit(
+                amount,
+                duration,
+                bonusMultiplier,
+                destination.address,
+                deadline,
+                v,
+                r,
+                s
+            )
+        ).wait();
 
         return getMostRecentNFT(destination);
     };
@@ -84,8 +95,10 @@ describe("XDEFIDistribution", () => {
     beforeEach(async () => {
         [god, account1, account2, account3] = await ethers.getSigners();
 
-        XDEFI = await (await (await ethers.getContractFactory("XDEFI")).deploy("XDEFI", "XDEFI", totalSupply)).deployed();
-        XDEFIDistribution = await (await (await ethers.getContractFactory("XDEFIDistribution")).deploy(XDEFI.address, "https://www.xdefi.io/nfts/")).deployed();
+        XDEFI = await (await (await ethers.getContractFactory('XDEFI')).deploy('XDEFI', 'XDEFI', totalSupply)).deployed();
+        XDEFIDistribution = await (
+            await (await ethers.getContractFactory('XDEFIDistribution')).deploy(XDEFI.address, 'https://www.xdefi.io/nfts/')
+        ).deployed();
 
         // Setup some bonus multipliers (0 days with 1x, 1 day with 1.2x, 2 days with 1.5x)
         await (await XDEFIDistribution.setLockPeriods(durations, bonusMultipliers)).wait();
@@ -97,13 +110,13 @@ describe("XDEFIDistribution", () => {
         await (await XDEFI.transfer(wallet.address, toWei(1000))).wait();
 
         // Give 100 Ether to `accountWithPrivateKey`
-        await god.sendTransaction({ to: wallet.address, value: ethers.utils.parseEther("100") });
+        await god.sendTransaction({ to: wallet.address, value: ethers.utils.parseEther('100') });
 
         // Get Domain Separator from contract
         domainSeparator = await XDEFI.DOMAIN_SEPARATOR();
     });
 
-    it("Can enter and exit deposited amounts with no distributions (no bonuses)", async () => {
+    it('Can enter and exit deposited amounts with no distributions (no bonuses)', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
         expect(await XDEFI.balanceOf(account1.address)).to.equal(toWei(0));
@@ -162,7 +175,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.withdrawableOf(nft3)).to.equal(toWei(0));
     });
 
-    it("Can enter and exit deposited amounts with no distributions (varied bonuses)", async () => {
+    it('Can enter and exit deposited amounts with no distributions (varied bonuses)', async () => {
         // Position 1 locks (no bonus)
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
         expect(await XDEFI.balanceOf(account1.address)).to.equal(toWei(0));
@@ -223,7 +236,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.withdrawableOf(nft3)).to.equal(toWei(0));
     });
 
-    it("Can enter and exit staggered portions of distributions (no bonuses)", async () => {
+    it('Can enter and exit staggered portions of distributions (no bonuses)', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -289,7 +302,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.totalSupply()).to.equal(3);
     });
 
-    it("Can enter and exit staggered portions of distributions (no bonuses, never calling updateDistribution)", async () => {
+    it('Can enter and exit staggered portions of distributions (no bonuses, never calling updateDistribution)', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -334,7 +347,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.totalSupply()).to.equal(3);
     });
 
-    it("Can enter and exit portions of distributions consecutively (no bonuses)", async () => {
+    it('Can enter and exit portions of distributions consecutively (no bonuses)', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -391,7 +404,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.totalSupply()).to.equal(3);
     });
 
-    it("Can enter and exit staggered of distributions (varied bonuses)", async () => {
+    it('Can enter and exit staggered of distributions (varied bonuses)', async () => {
         // Position 1 locks (no bonus)
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -459,7 +472,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.totalSupply()).to.equal(3);
     });
 
-    it("Can enter and exit staggered of distributions (varied bonuses, never calling updateDistribution)", async () => {
+    it('Can enter and exit staggered of distributions (varied bonuses, never calling updateDistribution)', async () => {
         // Position 1 locks (no bonus)
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -506,7 +519,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.totalSupply()).to.equal(3);
     });
 
-    it("Can enter and re-lock deposited amounts with no distributions (no bonuses)", async () => {
+    it('Can enter and re-lock deposited amounts with no distributions (no bonuses)', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -565,7 +578,7 @@ describe("XDEFIDistribution", () => {
         expect((await XDEFIDistribution.positionOf(nft6)).units).to.equal(toWei(0));
     });
 
-    it("Can enter and re-lock deposited amounts with no distributions (varied bonuses)", async () => {
+    it('Can enter and re-lock deposited amounts with no distributions (varied bonuses)', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -611,7 +624,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.withdrawableOf(nft6)).to.equal(toWei(1000));
     });
 
-    it("Can enter and re-lock staggered portions of distributions (no bonuses)", async () => {
+    it('Can enter and re-lock staggered portions of distributions (no bonuses)', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -719,7 +732,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.totalSupply()).to.equal(5);
     });
 
-    it("Can enter and re-lock staggered portions of distributions (varied bonuses)", async () => {
+    it('Can enter and re-lock staggered portions of distributions (varied bonuses)', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -829,7 +842,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.totalSupply()).to.equal(5);
     });
 
-    it("Can enter and batch exit deposited amounts with no distributions (no bonuses)", async () => {
+    it('Can enter and batch exit deposited amounts with no distributions (no bonuses)', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -873,7 +886,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.withdrawableOf(nft3)).to.equal(toWei(0));
     });
 
-    it("Can enter and batch exit deposited amounts with no distributions (varied bonuses)", async () => {
+    it('Can enter and batch exit deposited amounts with no distributions (varied bonuses)', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -918,7 +931,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.withdrawableOf(nft3)).to.equal(toWei(0));
     });
 
-    it("Can enter and batch exit with distributions (varied bonuses)", async () => {
+    it('Can enter and batch exit with distributions (varied bonuses)', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -967,7 +980,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.withdrawableOf(nft3)).to.equal(toWei(0));
     });
 
-    it("Can enter and batch relock with distributions (varied bonuses)", async () => {
+    it('Can enter and batch relock with distributions (varied bonuses)', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -1034,7 +1047,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.withdrawableOf(nft4)).to.equal(toWei(0));
     });
 
-    it("Can enter and batch relock all with distributions (varied bonuses)", async () => {
+    it('Can enter and batch relock all with distributions (varied bonuses)', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -1101,7 +1114,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.withdrawableOf(nft4)).to.equal(toWei(0));
     });
 
-    it("Can merge and transfer unlocked positions", async () => {
+    it('Can merge and transfer unlocked positions', async () => {
         // Position 1 locks
         const scoreOfPosition1 = (await XDEFIDistribution.getScore(toWei(1000), durations[0])).toString();
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
@@ -1133,7 +1146,9 @@ describe("XDEFIDistribution", () => {
         const nft4 = (await XDEFIDistribution.tokenOfOwnerByIndex(account1.address, 0)).toString();
         expect((await XDEFIDistribution.positionOf(nft4)).units).to.equal(toWei(0));
         expect(await XDEFIDistribution.withdrawableOf(nft4)).to.equal(toWei(0));
-        expect((await XDEFIDistribution.attributesOf(nft4)).score_).to.equal(BigInt(scoreOfPosition1) + BigInt(scoreOfPosition2) + BigInt(scoreOfPosition3));
+        expect((await XDEFIDistribution.attributesOf(nft4)).score_).to.equal(
+            BigInt(scoreOfPosition1) + BigInt(scoreOfPosition2) + BigInt(scoreOfPosition3)
+        );
 
         // Unlocked position 4 transferred
         await (await XDEFIDistribution.connect(account1).transferFrom(account1.address, account2.address, nft4)).wait();
@@ -1148,7 +1163,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.totalSupply()).to.equal(1);
     });
 
-    it("Cannot merge unlocked positions", async () => {
+    it('Cannot merge unlocked positions', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
@@ -1161,14 +1176,18 @@ describe("XDEFIDistribution", () => {
         await (await XDEFIDistribution.connect(account3).transferFrom(account3.address, account1.address, nft3)).wait();
 
         // Attempted to merge locked positions 1, 2, and 3 into unlocked position 4
-        await expect(XDEFIDistribution.connect(account1).merge([nft1, nft2, nft3], account1.address)).to.be.revertedWith("PositionStillLocked()");
+        await expect(XDEFIDistribution.connect(account1).merge([nft1, nft2, nft3], account1.address)).to.be.revertedWith(
+            'PositionStillLocked()'
+        );
 
         // Attempted to merge locked positions 1, 2, and 3 into unlocked position 4, even after elapsed time
         await hre.ethers.provider.send('evm_increaseTime', [durations[2]]);
-        await expect(XDEFIDistribution.connect(account1).merge([nft1, nft2, nft3], account1.address)).to.be.revertedWith("PositionStillLocked()");
+        await expect(XDEFIDistribution.connect(account1).merge([nft1, nft2, nft3], account1.address)).to.be.revertedWith(
+            'PositionStillLocked()'
+        );
     });
 
-    it("Can transfer ownership", async () => {
+    it('Can transfer ownership', async () => {
         await (await XDEFIDistribution.proposeOwnership(account1.address)).wait();
 
         expect(await XDEFIDistribution.pendingOwner()).to.equal(account1.address);
@@ -1190,7 +1209,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.owner()).to.equal(god.address);
     });
 
-    it("Can enter and exit deposited amount, with permits, with no distributions (no bonuses)", async () => {
+    it('Can enter and exit deposited amount, with permits, with no distributions (no bonuses)', async () => {
         // Position 1 locks
         const nft1 = await lockWithPermit(wallet, toWei(1000), durations[0], bonusMultipliers[0], wallet, 0, maxDeadline);
         expect(await XDEFI.balanceOf(wallet.address)).to.equal(toWei(0));
@@ -1219,7 +1238,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.withdrawableOf(nft1)).to.equal(toWei(0));
     });
 
-    it("Can unlock immediately, and cannot lock, once disabled", async () => {
+    it('Can unlock immediately, and cannot lock, once disabled', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[1], bonusMultipliers[1]);
 
@@ -1234,7 +1253,9 @@ describe("XDEFIDistribution", () => {
 
         // Position 3 should fail to lock
         await (await XDEFI.connect(account3).approve(XDEFIDistribution.address, toWei(1000))).wait();
-        await expect(XDEFIDistribution.connect(account3).lock(toWei(1000), durations[0], bonusMultipliers[0], account3.address)).to.be.revertedWith("LockingIsDisabled()");
+        await expect(
+            XDEFIDistribution.connect(account3).lock(toWei(1000), durations[0], bonusMultipliers[0], account3.address)
+        ).to.be.revertedWith('LockingIsDisabled()');
 
         // Position 1 unlocks despite insufficient elapsed time
         await (await XDEFIDistribution.connect(account1).unlock(nft1, account1.address)).wait();
@@ -1258,7 +1279,7 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.totalSupply()).to.equal(2);
     });
 
-    it("Can unlock immediately with emergencyUnlock, once disabled", async () => {
+    it('Can unlock immediately with emergencyUnlock, once disabled', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[1], bonusMultipliers[1]);
 
@@ -1293,11 +1314,11 @@ describe("XDEFIDistribution", () => {
         expect(await XDEFIDistribution.totalSupply()).to.equal(2);
     });
 
-    it("Can consume from unlocked positions", async () => {
+    it('Can consume from unlocked positions', async () => {
         // Position 1 locks
         const scoreOfPosition1 = (await XDEFIDistribution.getScore(toWei(1000), durations[0])).toString();
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
-        const [ tier1, score1, sequence1 ] = await XDEFIDistribution.attributesOf(nft1);
+        const [tier1, score1, sequence1] = await XDEFIDistribution.attributesOf(nft1);
         expect(tier1).to.equal(1);
         expect(score1).to.equal(scoreOfPosition1);
         expect(sequence1).to.equal(0);
@@ -1305,7 +1326,7 @@ describe("XDEFIDistribution", () => {
         // Position 2 locks and is transferred to account 1
         const scoreOfPosition2 = (await XDEFIDistribution.getScore(toWei(1000), durations[1])).toString();
         const nft2 = await lock(account2, toWei(1000), durations[1], bonusMultipliers[1]);
-        const [ tier2, score2, sequence2 ] = await XDEFIDistribution.attributesOf(nft2);
+        const [tier2, score2, sequence2] = await XDEFIDistribution.attributesOf(nft2);
         expect(tier2).to.equal(1);
         expect(score2).to.equal(scoreOfPosition2);
         expect(sequence2).to.equal(1);
@@ -1314,7 +1335,7 @@ describe("XDEFIDistribution", () => {
         // Position 3 locks and is transferred to account 1
         const scoreOfPosition3 = (await XDEFIDistribution.getScore(toWei(1000), durations[2])).toString();
         const nft3 = await lock(account3, toWei(1000), durations[2], bonusMultipliers[2]);
-        const [ tier3, score3, sequence3 ] = await XDEFIDistribution.attributesOf(nft3);
+        const [tier3, score3, sequence3] = await XDEFIDistribution.attributesOf(nft3);
         expect(tier3).to.equal(1);
         expect(score3).to.equal(scoreOfPosition3);
         expect(sequence3).to.equal(2);
@@ -1327,7 +1348,7 @@ describe("XDEFIDistribution", () => {
         // Unlocked position 1 is consumed from by the owner
         await (await XDEFIDistribution.connect(account1).consume(nft1, 10, account1.address)).wait();
         const nft4 = await getMostRecentNFT(account1);
-        const [ tier4, score4, sequence4 ] = await XDEFIDistribution.attributesOf(nft4);
+        const [tier4, score4, sequence4] = await XDEFIDistribution.attributesOf(nft4);
         expect(tier4).to.equal(1);
         expect(score4).to.equal(BigInt(scoreOfPosition1) - 10n);
         expect(sequence4).to.equal(3);
@@ -1336,7 +1357,7 @@ describe("XDEFIDistribution", () => {
         await (await XDEFIDistribution.connect(account1).approve(account2.address, nft2)).wait();
         await (await XDEFIDistribution.connect(account2).consume(nft2, 20, account1.address)).wait();
         const nft5 = await getMostRecentNFT(account1);
-        const [ tier5, score5, sequence5 ] = await XDEFIDistribution.attributesOf(nft5);
+        const [tier5, score5, sequence5] = await XDEFIDistribution.attributesOf(nft5);
         expect(tier5).to.equal(1);
         expect(score5).to.equal(BigInt(scoreOfPosition2) - 20n);
         expect(sequence5).to.equal(4);
@@ -1345,16 +1366,16 @@ describe("XDEFIDistribution", () => {
         await (await XDEFIDistribution.connect(account1).setApprovalForAll(account3.address, true)).wait();
         await (await XDEFIDistribution.connect(account3).consume(nft3, 30, account1.address)).wait();
         const nft6 = await getMostRecentNFT(account1);
-        const [ tier6, score6, sequence6 ] = await XDEFIDistribution.attributesOf(nft6);
+        const [tier6, score6, sequence6] = await XDEFIDistribution.attributesOf(nft6);
         expect(tier6).to.equal(1);
         expect(score6).to.equal(BigInt(scoreOfPosition3) - 30n);
         expect(sequence6).to.equal(5);
     });
 
-    it("Cannot consume from locked positions", async () => {
+    it('Cannot consume from locked positions', async () => {
         // Position 1 locks
         const nft1 = await lock(account1, toWei(1000), durations[0], bonusMultipliers[0]);
 
-        await expect(XDEFIDistribution.connect(account1).consume(nft1, 10, account1.address)).to.be.revertedWith("PositionStillLocked()");
+        await expect(XDEFIDistribution.connect(account1).consume(nft1, 10, account1.address)).to.be.revertedWith('PositionStillLocked()');
     });
 });

@@ -1,13 +1,13 @@
-require("@nomiclabs/hardhat-waffle");
-require("hardhat-gas-reporter");
+require('@nomiclabs/hardhat-waffle');
+require('hardhat-gas-reporter');
 require('solidity-coverage');
 const secrets = require('./.secrets.json');
 
 module.exports = {
     solidity: {
-        version: "0.8.10",
+        version: '0.8.10',
         settings: {
-            evmVersion: "london",
+            evmVersion: 'london',
             optimizer: {
                 enabled: true,
                 runs: 200,
@@ -21,16 +21,16 @@ module.exports = {
                     constantOptimizer: true,
                     yul: true,
                     yulDetails: {
-                        stackAllocation: true
-                    }
-                }
+                        stackAllocation: true,
+                    },
+                },
             },
             metadata: {
-                bytecodeHash: "none"
+                bytecodeHash: 'none',
             },
-        }
+        },
     },
-    defaultNetwork: "hardhat",
+    defaultNetwork: 'hardhat',
     networks: {
         hardhat: {},
         ropsten: {
@@ -50,10 +50,10 @@ module.exports = {
                 initialIndex: 0,
                 count: 1,
             },
-        }
+        },
     },
     gasReporter: {
         currency: 'USD',
-        gasPrice: 125
-    }
+        gasPrice: 125,
+    },
 };
