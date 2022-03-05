@@ -69,7 +69,7 @@ const getAttributes = async (tokenId) => {
     );
 
     return {
-        tier: BigInt('0x' + result.slice(2, 66)).toString(),
+        tier: Number(BigInt('0x' + result.slice(2, 66))),
         credits: BigInt('0x' + result.slice(66, 130)).toString(),
         withdrawable: BigInt('0x' + result.slice(130, 194)).toString(),
         expiry: Number(BigInt('0x' + result.slice(194, 258))),
@@ -92,13 +92,13 @@ const metadataResponse = async (tokenIdParam, res) => {
     const { name, file } = creature;
 
     const attributes = [
-        { display_type: 'number', trait_type: 'Tier', value: tier },
-        { display_type: 'number', trait_type: 'Credits', value: credits },
+        { display_type: 'number', trait_type: 'Tier', value: tier, max_value: 13 },
+        { trait_type: 'Credits', value: credits },
         { trait_type: 'Has Locked Position', value: expiry ? 'yes' : 'no' },
     ];
 
     if (expiry) {
-        attributes.push({ display_type: 'number', trait_type: 'Withdrawable XDEFI', value: withdrawable });
+        attributes.push({ trait_type: 'Withdrawable XDEFI', value: withdrawable });
         attributes.push({ display_type: 'date', trait_type: 'Lock Expiry', value: expiry });
     }
 
