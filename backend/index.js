@@ -24,6 +24,10 @@ const CREATURES = {
     13: { name: 'The Kraken', file: 'thekraken' },
 };
 
+const toDecimal = (value, decimalsIn, decimalsOut) => {
+    return Number((Number(value / (10n ** BigInt(decimalsIn - decimalsOut))) / (10 ** decimalsOut)).toFixed(decimalsOut));
+};
+
 const errorResponse = (res, error = '') => {
     res.writeHead(400);
     res.end(error);
@@ -70,8 +74,8 @@ const getAttributes = async (tokenId) => {
 
     return {
         tier: Number(BigInt('0x' + result.slice(2, 66))),
-        credits: BigInt('0x' + result.slice(66, 130)).toString(),
-        withdrawable: BigInt('0x' + result.slice(130, 194)).toString(),
+        credits: BigInt('0x' + result.slice(66, 130)),
+        withdrawable: BigInt('0x' + result.slice(130, 194)),
         expiry: Number(BigInt('0x' + result.slice(194, 258))),
     };
 };
@@ -93,12 +97,12 @@ const metadataResponse = async (tokenIdParam, res) => {
 
     const attributes = [
         { display_type: 'number', trait_type: 'Tier', value: tier, max_value: 13 },
-        { trait_type: 'Credits', value: credits },
+        { display_type: 'number', trait_type: 'Credits', value: toDecimal(credits, 18, 0) },
         { trait_type: 'Has Locked Position', value: expiry ? 'yes' : 'no' },
     ];
 
     if (expiry) {
-        attributes.push({ trait_type: 'Withdrawable XDEFI', value: withdrawable });
+        attributes.push({ display_type: 'number', trait_type: 'Withdrawable XDEFI', value: toDecimal(withdrawable, 18, 0) });
         attributes.push({ display_type: 'date', trait_type: 'Lock Expiry', value: expiry });
     }
 
