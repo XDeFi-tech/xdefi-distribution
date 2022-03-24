@@ -9,23 +9,23 @@ const port = 8000;
 const contract = '0x0000000000000000000000000000000000000000';
 
 const CREATURES = {
-    1: { name: 'Ikalgo', file: 'ikalgo' },
-    2: { name: 'Oxtopus', file: 'oxtopus' },
-    3: { name: 'Nautilus', file: 'nautilus' },
-    4: { name: 'Kaurna', file: 'kaurna' },
-    5: { name: 'Haliphron', file: 'haliphron' },
-    6: { name: 'Kanaloa', file: 'kanaloa' },
-    7: { name: 'Taniwha', file: 'taniwha' },
-    8: { name: 'Cthulhu', file: 'cthulhu' },
-    9: { name: 'Yacumama', file: 'yacumama' },
-    10: { name: 'Hafgufa', file: 'hafgufa' },
-    11: { name: 'Akkorokamui', file: 'akkorokamui' },
-    12: { name: 'Nessie', file: 'nessie' },
-    13: { name: 'The Kraken', file: 'thekraken' },
+    1: { name: 'Ikalgo', file: 'ikalgo', threshold: (0n * 30n * 86_400n).toString() },
+    2: { name: 'Oxtopus', file: 'oxtopus', threshold: (150n * 30n * 86_400n).toString() },
+    3: { name: 'Nautilus', file: 'nautilus', threshold: (300n * 30n * 86_400n).toString() },
+    4: { name: 'Kaurna', file: 'kaurna', threshold: (750n * 30n * 86_400n).toString() },
+    5: { name: 'Haliphron', file: 'haliphron', threshold: (1_500n * 30n * 86_400n).toString() },
+    6: { name: 'Kanaloa', file: 'kanaloa', threshold: (3_000n * 30n * 86_400n).toString() },
+    7: { name: 'Taniwha', file: 'taniwha', threshold: (7_000n * 30n * 86_400n).toString() },
+    8: { name: 'Cthulhu', file: 'cthulhu', threshold: (15_000n * 30n * 86_400n).toString() },
+    9: { name: 'Yacumama', file: 'yacumama', threshold: (30_000n * 30n * 86_400n).toString() },
+    10: { name: 'Hafgufa', file: 'hafgufa', threshold: (60_000n * 30n * 86_400n).toString() },
+    11: { name: 'Akkorokamui', file: 'akkorokamui', threshold: (120_000n * 30n * 86_400n).toString() },
+    12: { name: 'Nessie', file: 'nessie', threshold: (250_000n * 30n * 86_400n).toString() },
+    13: { name: 'The Kraken', file: 'thekraken', threshold: (500_000n * 30n * 86_400n).toString() },
 };
 
 const toDecimal = (value, decimalsIn, decimalsOut) => {
-    return Number((Number(value / (10n ** BigInt(decimalsIn - decimalsOut))) / (10 ** decimalsOut)).toFixed(decimalsOut));
+    return Number((Number(value / 10n ** BigInt(decimalsIn - decimalsOut)) / 10 ** decimalsOut).toFixed(decimalsOut));
 };
 
 const errorResponse = (res, error = '') => {
@@ -43,6 +43,7 @@ const infoResponse = (res) => {
         external_link: 'https://www.xdefi.io/',
         seller_fee_basis_points: 100, // 1% in basis points
         fee_recipient: '0x0000000000000000000000000000000000000000',
+        tiers: CREATURES,
     });
 
     res.end(metadata);
@@ -69,7 +70,7 @@ const getAttributes = async (tokenId) => {
             headers: {
                 'Content-Type': 'application/json',
             },
-        },
+        }
     );
 
     return {
@@ -87,7 +88,11 @@ const metadataResponse = async (tokenIdParam, res) => {
 
     if (tokenId >= 2n ** 256n) return errorResponse(res, 'INVALID TOKEN ID');
 
-    const { tier, credits, withdrawable, expiry } = await getAttributes(tokenId).catch(() => errorResponse(res, 'FETCH FAIL'));
+    const fetchedAttributes = await getAttributes(tokenId).catch(() => errorResponse(res, 'FETCH FAIL'));
+
+    if (!fetchedAttributes) return;
+
+    const { tier, credits, withdrawable, expiry } = fetchedAttributes;
 
     const creature = CREATURES[tier];
 

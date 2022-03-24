@@ -11,7 +11,7 @@
         "deploy:rinkeby": "hardhat run scripts/deploy.js --network rinkeby",
         "deploy:mainnet": "hardhat run scripts/deploy.js --network mainnet",
         "deploy:ganache": "hardhat run scripts/deploy.js --network ganache",
-        "sample:ganache": "hardhat run scripts/sampleLock.js --network ganache",
+        "lock:ganache": "hardhat run scripts/sampleLock.js --network ganache",
         "server": "node ./backend/index.js",
         "prettier": "prettier --write './'"
     },

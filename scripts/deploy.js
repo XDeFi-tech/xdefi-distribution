@@ -5,27 +5,50 @@ async function main() {
     const [deployer] = await ethers.getSigners();
     const balance = BigInt((await deployer.getBalance()).toString());
 
-    console.log('Deploying contracts with the account:', deployer.address);
-    console.log('Account XDEFI balance:', balance);
+    console.log(`Deploying contracts with the account: ${deployer.address}`);
+    console.log(`Account ETH balance: ${balance / 10n ** 18n} ETH`);
 
     if (!balance) return;
 
-    const XDEFI =
-        secrets.xdefi ??
-        (await (await (await ethers.getContractFactory('XDEFI')).deploy('XDEFI', 'XDEFI', '240000000000000000000000000')).deployed())
-            .address;
+    const xdefiFactory = await ethers.getContractFactory('XDEFI', deployer);
 
-    console.log('XDEFI address:', XDEFI);
+    const XDEFI = secrets.xdefi
+        ? xdefiFactory.attach(secrets.xdefi)
+        : await (await xdefiFactory.deploy('XDEFI', 'XDEFI', '240000000000000000000000000')).deployed();
 
-    const XDEFIDistribution = await (
-        await (await ethers.getContractFactory('XDEFIDistribution')).deploy(XDEFI, secrets.baseURI)
-    ).deployed();
+    console.log(`XDEFI address: ${XDEFI.address}`);
 
-    console.log('XDEFIDistribution address:', XDEFIDistribution.address);
+    const xdefiBalance = BigInt((await XDEFI.balanceOf(deployer.address)).toString());
 
-    const XDEFIDistributionHelper = await (await (await ethers.getContractFactory('XDEFIDistributionHelper')).deploy()).deployed();
+    console.log(`Account XDEFI balance: ${xdefiBalance / 10n ** 18n} XDEFI`);
 
-    console.log('XDEFIDistributionHelper address:', XDEFIDistributionHelper.address);
+    const xdefiDistributionFactory = await ethers.getContractFactory('XDEFIDistribution', deployer);
+
+    const XDEFIDistribution = secrets.xdefiDistribution
+        ? xdefiDistributionFactory.attach(secrets.xdefiDistribution)
+        : await (await xdefiDistributionFactory.deploy(XDEFI.address, secrets.baseURI ?? '')).deployed();
+
+    console.log(`XDEFIDistribution address: ${XDEFIDistribution.address}`);
+
+    if (secrets.lockPeriods) {
+        const durations = secrets.lockPeriods.map(({ duration }) => duration);
+        const multipliers = secrets.lockPeriods.map(({ multiplier }) => multiplier);
+        await (await XDEFIDistribution.setLockPeriods(durations, multipliers)).wait();
+
+        for (let i = 0; i < secrets.lockPeriods.length; ++i) {
+            const duration = secrets.lockPeriods[i].duration;
+            const multiplier = (await XDEFIDistribution.bonusMultiplierOf(duration)).toString();
+            console.log(`Bonus multiplier for ${duration} seconds set to ${multiplier / 100} times`);
+        }
+    }
+
+    const xdefiDistributionHelperFactory = await ethers.getContractFactory('XDEFIDistributionHelper', deployer);
+
+    const XDEFIDistributionHelper = secrets.xdefiDistributionHelper
+        ? xdefiDistributionHelperFactory.attach(secrets.xdefiDistributionHelper)
+        : await (await xdefiDistributionHelperFactory.deploy()).deployed();
+
+    console.log(`XDEFIDistributionHelper address: ${XDEFIDistributionHelper.address}`);
 }
 
 main()

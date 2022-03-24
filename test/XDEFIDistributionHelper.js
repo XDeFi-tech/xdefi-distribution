@@ -66,22 +66,57 @@ describe('XDEFIDistributionHelper', () => {
         expect(await XDEFIDistribution.balanceOf(account1.address)).to.equal(3);
 
         await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address).then((tokenIds) => {
-            expect(tokenIds.map((t) => t.toString())).to.deep.equal([nft1, nft2, nft3]);
+            expect(tokenIds.map((t) => t.toString())).to.deep.equal(['1', '2', '3']);
         });
+
+        await XDEFIDistributionHelper.getAllTokensAndCreditsForAccount(XDEFIDistribution.address, account1.address).then(
+            ({ tokenIds_, credits_ }) => {
+                expect(tokenIds_.map((t) => t.toString())).to.deep.equal(['1', '2', '3']);
+
+                expect(credits_.map((c) => c.toString())).to.deep.equal([
+                    '1000000000000000000000',
+                    '86400000000000000000000000',
+                    '172800000000000000000000000',
+                ]);
+            }
+        );
 
         await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address).then(
             async ({ tokenIds_, positions_, withdrawables_ }) => {
-                expect(tokenIds_.map((t) => t.toString())).to.deep.equal([nft1, nft2, nft3]);
+                expect(tokenIds_.map((t) => t.toString())).to.deep.equal(['1', '2', '3']);
 
                 expect(positions_.length).to.equal(3);
-                expect(positions_[0]).to.deep.equal(await XDEFIDistribution.positionOf(nft1));
-                expect(positions_[1]).to.deep.equal(await XDEFIDistribution.positionOf(nft2));
-                expect(positions_[2]).to.deep.equal(await XDEFIDistribution.positionOf(nft3));
+                expect(positions_[0]).to.deep.equal(await XDEFIDistribution.positionOf('1'));
+                expect(positions_[1]).to.deep.equal(await XDEFIDistribution.positionOf('2'));
+                expect(positions_[2]).to.deep.equal(await XDEFIDistribution.positionOf('3'));
 
                 expect(withdrawables_.map((x) => x.toString())).to.deep.equal([
                     toWei(1270, '270270270270270270', 0),
                     toWei(1324, '324324324324324324', 0),
                     toWei(1405, '405405405405405405', 0),
+                ]);
+            }
+        );
+
+        await XDEFIDistributionHelper.getAllLockedPositionsAndCreditsForAccount(XDEFIDistribution.address, account1.address).then(
+            async ({ tokenIds_, positions_, withdrawables_, credits_ }) => {
+                expect(tokenIds_.map((t) => t.toString())).to.deep.equal(['1', '2', '3']);
+
+                expect(positions_.length).to.equal(3);
+                expect(positions_[0]).to.deep.equal(await XDEFIDistribution.positionOf('1'));
+                expect(positions_[1]).to.deep.equal(await XDEFIDistribution.positionOf('2'));
+                expect(positions_[2]).to.deep.equal(await XDEFIDistribution.positionOf('3'));
+
+                expect(withdrawables_.map((x) => x.toString())).to.deep.equal([
+                    toWei(1270, '270270270270270270', 0),
+                    toWei(1324, '324324324324324324', 0),
+                    toWei(1405, '405405405405405405', 0),
+                ]);
+
+                expect(credits_.map((c) => c.toString())).to.deep.equal([
+                    '1000000000000000000000',
+                    '86400000000000000000000000',
+                    '172800000000000000000000000',
                 ]);
             }
         );
@@ -93,16 +128,28 @@ describe('XDEFIDistributionHelper', () => {
         expect(await XDEFIDistribution.balanceOf(account1.address)).to.equal(3);
 
         await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address).then((tokenIds) => {
-            expect(tokenIds.map((t) => t.toString())).to.deep.equal([nft1, nft2, nft3]);
+            expect(tokenIds.map((t) => t.toString())).to.deep.equal(['1', '2', '3']);
         });
+
+        await XDEFIDistributionHelper.getAllTokensAndCreditsForAccount(XDEFIDistribution.address, account1.address).then(
+            ({ tokenIds_, credits_ }) => {
+                expect(tokenIds_.map((t) => t.toString())).to.deep.equal(['1', '2', '3']);
+
+                expect(credits_.map((c) => c.toString())).to.deep.equal([
+                    '1000000000000000000000',
+                    '86400000000000000000000000',
+                    '172800000000000000000000000',
+                ]);
+            }
+        );
 
         await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address).then(
             async ({ tokenIds_, positions_, withdrawables_ }) => {
-                expect(tokenIds_.map((t) => t.toString())).to.deep.equal([nft2, nft3]);
+                expect(tokenIds_.map((t) => t.toString())).to.deep.equal(['2', '3']);
 
                 expect(positions_.length).to.equal(2);
-                expect(positions_[0]).to.deep.equal(await XDEFIDistribution.positionOf(nft2));
-                expect(positions_[1]).to.deep.equal(await XDEFIDistribution.positionOf(nft3));
+                expect(positions_[0]).to.deep.equal(await XDEFIDistribution.positionOf('2'));
+                expect(positions_[1]).to.deep.equal(await XDEFIDistribution.positionOf('3'));
 
                 expect(withdrawables_.map((x) => x.toString())).to.deep.equal([
                     toWei(1324, '324324324324324324', 0),
@@ -111,46 +158,107 @@ describe('XDEFIDistributionHelper', () => {
             }
         );
 
+        await XDEFIDistributionHelper.getAllLockedPositionsAndCreditsForAccount(XDEFIDistribution.address, account1.address).then(
+            async ({ tokenIds_, positions_, withdrawables_, credits_ }) => {
+                expect(tokenIds_.map((t) => t.toString())).to.deep.equal(['2', '3']);
+
+                expect(positions_.length).to.equal(2);
+                expect(positions_[0]).to.deep.equal(await XDEFIDistribution.positionOf('2'));
+                expect(positions_[1]).to.deep.equal(await XDEFIDistribution.positionOf('3'));
+
+                expect(withdrawables_.map((x) => x.toString())).to.deep.equal([
+                    toWei(1324, '324324324324324324', 0),
+                    toWei(1405, '405405405405405405', 0),
+                ]);
+
+                expect(credits_.map((c) => c.toString())).to.deep.equal(['86400000000000000000000000', '172800000000000000000000000']);
+            }
+        );
+
         // Position 2 unlocks
         await hre.ethers.provider.send('evm_increaseTime', [86400]);
-        await (await XDEFIDistribution.connect(account1).unlock(nft2, account1.address)).wait();
+        await (await XDEFIDistribution.connect(account1).unlock('2', account1.address)).wait();
 
         // Get all data for account 1's positions.
         expect(await XDEFIDistribution.balanceOf(account1.address)).to.equal(3);
 
         await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address).then((tokenIds) => {
-            expect(tokenIds.map((t) => t.toString())).to.deep.equal([nft1, nft2, nft3]);
+            expect(tokenIds.map((t) => t.toString())).to.deep.equal(['1', '2', '3']);
         });
+
+        await XDEFIDistributionHelper.getAllTokensAndCreditsForAccount(XDEFIDistribution.address, account1.address).then(
+            ({ tokenIds_, credits_ }) => {
+                expect(tokenIds_.map((t) => t.toString())).to.deep.equal(['1', '2', '3']);
+
+                expect(credits_.map((c) => c.toString())).to.deep.equal([
+                    '1000000000000000000000',
+                    '86400000000000000000000000',
+                    '172800000000000000000000000',
+                ]);
+            }
+        );
 
         await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address).then(
             async ({ tokenIds_, positions_, withdrawables_ }) => {
-                expect(tokenIds_.map((t) => t.toString())).to.deep.equal([nft3]);
+                expect(tokenIds_.map((t) => t.toString())).to.deep.equal(['3']);
 
                 expect(positions_.length).to.equal(1);
-                expect(positions_[0]).to.deep.equal(await XDEFIDistribution.positionOf(nft3));
+                expect(positions_[0]).to.deep.equal(await XDEFIDistribution.positionOf('3'));
 
                 expect(withdrawables_.map((x) => x.toString())).to.deep.equal([toWei(1405, '405405405405405405', 0)]);
             }
         );
 
+        await XDEFIDistributionHelper.getAllLockedPositionsAndCreditsForAccount(XDEFIDistribution.address, account1.address).then(
+            async ({ tokenIds_, positions_, withdrawables_, credits_ }) => {
+                expect(tokenIds_.map((t) => t.toString())).to.deep.equal(['3']);
+
+                expect(positions_.length).to.equal(1);
+                expect(positions_[0]).to.deep.equal(await XDEFIDistribution.positionOf('3'));
+
+                expect(withdrawables_.map((x) => x.toString())).to.deep.equal([toWei(1405, '405405405405405405', 0)]);
+
+                expect(credits_.map((c) => c.toString())).to.deep.equal(['172800000000000000000000000']);
+            }
+        );
+
         // Position 3 unlocks
         await hre.ethers.provider.send('evm_increaseTime', [86400]);
-        await (await XDEFIDistribution.connect(account1).unlock(nft3, account1.address)).wait();
+        await (await XDEFIDistribution.connect(account1).unlock('3', account1.address)).wait();
 
         // Get all data for account 1's positions.
         expect(await XDEFIDistribution.balanceOf(account1.address)).to.equal(3);
 
         await XDEFIDistributionHelper.getAllTokensForAccount(XDEFIDistribution.address, account1.address).then((tokenIds) => {
-            expect(tokenIds.map((t) => t.toString())).to.deep.equal([nft1, nft2, nft3]);
+            expect(tokenIds.map((t) => t.toString())).to.deep.equal(['1', '2', '3']);
         });
+
+        await XDEFIDistributionHelper.getAllTokensAndCreditsForAccount(XDEFIDistribution.address, account1.address).then(
+            ({ tokenIds_, credits_ }) => {
+                expect(tokenIds_.map((t) => t.toString())).to.deep.equal(['1', '2', '3']);
+
+                expect(credits_.map((c) => c.toString())).to.deep.equal([
+                    '1000000000000000000000',
+                    '86400000000000000000000000',
+                    '172800000000000000000000000',
+                ]);
+            }
+        );
 
         await XDEFIDistributionHelper.getAllLockedPositionsForAccount(XDEFIDistribution.address, account1.address).then(
             async ({ tokenIds_, positions_, withdrawables_ }) => {
-                expect(tokenIds_.map((t) => t.toString())).to.deep.equal([]);
-
+                expect(tokenIds_.length).to.equal(0);
                 expect(positions_.length).to.equal(0);
+                expect(withdrawables_.length).to.equal(0);
+            }
+        );
 
-                expect(withdrawables_.map((x) => x.toString())).to.deep.equal([]);
+        await XDEFIDistributionHelper.getAllLockedPositionsAndCreditsForAccount(XDEFIDistribution.address, account1.address).then(
+            async ({ tokenIds_, positions_, withdrawables_, credits_ }) => {
+                expect(tokenIds_.length).to.equal(0);
+                expect(positions_.length).to.equal(0);
+                expect(withdrawables_.length).to.equal(0);
+                expect(credits_.length).to.equal(0);
             }
         );
     });
