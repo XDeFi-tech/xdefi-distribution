@@ -4,6 +4,11 @@ pragma solidity =0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 
+/**
+ * @title XDEFI Vault - for vote-escrowed XDEFI (veXDEFI)
+ * @author David P. (dp@xdefi.io)
+ * @notice Unaudited experimental code. Do not use in production.
+ */
 contract XDEFIVault is ERC20, IERC4626 {
     using Math for uint256;
 
