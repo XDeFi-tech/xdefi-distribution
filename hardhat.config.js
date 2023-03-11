@@ -5,7 +5,7 @@ const secrets = require('./.secrets.json');
 
 module.exports = {
     solidity: {
-        version: '0.8.12',
+        version: '0.8.19',
         settings: {
             evmVersion: 'london',
             optimizer: {
