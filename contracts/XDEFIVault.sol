@@ -34,6 +34,17 @@ contract XDEFIVault is ERC20, IERC4626, Ownable {
      * The uint256 value is the unlock time timestamp in seconds.
      */
     mapping(address => uint256) public _addressUnlockTimesMap;
+    /**
+     * @notice This is a mapping of address to their respective lockup ratios.
+     * This is used to have historical records of the lockup ratio that was used when the user deposited their funds.
+     * The uint256 value is the lockup ratio in basis points (1/100th of a percent).
+     *
+     * For example, if the user deposited 100 XDEFI with a lockup time of 1 year and the lockup ratio was 11000 (110%), then
+     * the user will get 110 veXDEFI.
+     * If the user decides to add to his deposit, then the lockup ratio will be the same as the previous deposit.
+     * If the user decides to extend his lockup time, then the lockup ratio will be the same as the previous deposit.
+     */
+    mapping(address => uint256) public _addressLockupRatioMap;
 
     /**
      * @dev This is a mapping of lockup time to the ratio of veXDEFI to XDEFI.
@@ -47,6 +58,9 @@ contract XDEFIVault is ERC20, IERC4626, Ownable {
      * @dev This is the default lockup time (in seconds) that is used when the user does not specify a lockup time.
      */
     uint256 public defaultLockupTime;
+
+    event ExtendedLockupTime(address indexed account, uint256 lockupTime, uint256 newLockupTime, uint256 shares, uint256 newShares);
+    event AddedToDeposit(address indexed account, uint256 amount, uint256 lockupTime, uint256 shares, uint256 newShares);
 
     constructor(IERC20 asset_, uint256[] memory lockupTimes_, uint256[] memory lockupTimesRatios_) ERC20("vote-escrowed XDEFI", "veXDEFI") {
         (bool success, uint8 assetDecimals) = _tryGetAssetDecimals(asset_);
@@ -152,9 +166,16 @@ contract XDEFIVault is ERC20, IERC4626, Ownable {
         // if the receiver has no lockup time, set it to now + default lockup time
         if (receiverDefaultTime == 0) {
             _addressUnlockTimesMap[receiver] = block.timestamp + defaultLockupTime;
+            _addressLockupRatioMap[receiver] = _lockupTimesRatiosMap[defaultLockupTime];
         } else {
-            // else he has a lockup time (existing position); extend the lockup time
-            _addressUnlockTimesMap[receiver] = Math.max(receiverDefaultTime + defaultLockupTime, block.timestamp + defaultLockupTime);
+            balanceOf(receiver)
+            // TODO: should just add to current lockup time/ratio
+            // shuold just add to current lockup time/ratio
+            // prorated to lockup time
+            // based on _addressLockupRatioMap[receiver]
+            // TODO: emit AddedToDeposit
+
+            return 0; // TODO: remove
         }
         _deposit(_msgSender(), receiver, assets, shares);
         return shares;
@@ -174,9 +195,14 @@ contract XDEFIVault is ERC20, IERC4626, Ownable {
         // if the receiver has no lockup time, set it to now + default lockup time
         if (receiverDefaultTime == 0) {
             _addressUnlockTimesMap[receiver] = block.timestamp + defaultLockupTime;
+            _addressLockupRatioMap[receiver] = _lockupTimesRatiosMap[defaultLockupTime];
         } else {
-            // else he has a lockup time (existing position); extend the lockup time
-            _addressUnlockTimesMap[receiver] = Math.max(receiverDefaultTime + defaultLockupTime, block.timestamp + defaultLockupTime);
+            // TODO: should just add to current lockup time/ratio
+            // shuold just add to current lockup time/ratio
+            // prorated to lockup time
+            // based on _addressLockupRatioMap[receiver]
+            // TODO: emit AddedToDeposit
+            return 0; // TODO: remove
         }
         _deposit(_msgSender(), receiver, assets, shares);
 
@@ -367,5 +393,19 @@ contract XDEFIVault is ERC20, IERC4626, Ownable {
      */
     function setEmergencyModeTimestamp(uint256 emergencyMode) public virtual onlyOwner {
         _emergencyModeTimestamp = emergencyMode;
+    }
+
+    function extend(uint256 lockupTime) public virtual onlyNotEmergencyMode returns (uint256) {
+        address receiver = _msgSender();
+        require(lockupTime > 0, "XDEFIVault: lockup time must be greater than 0");
+        require(_addressUnlockTimesMap[receiver] > 0, "XDEFIVault: receiver has no lockup time");
+        uint256 ratio = _lockupTimesRatiosMap[lockupTime];
+        require(ratio > 0, "XDEFIVault: invalid lockup time");
+        _addressUnlockTimesMap[receiver] = Math.max(_addressUnlockTimesMap[receiver] + lockupTime, block.timestamp + lockupTime);
+
+        uint256 shares = balanceOf(receiver).mulDiv(ratio, 10_000, Math.Rounding.Down);
+        _deposit(receiver, receiver, 0, shares);
+        // TODO: emit ExtendedLockupTime(account, lockupTime, newLockupTime, shares, newShares);
+        return _addressUnlockTimesMap[receiver];
     }
 }
