@@ -15,7 +15,7 @@ contract XDEFIVault is ERC20, IERC4626 {
     IERC20 private immutable _asset;
     uint8 private immutable _underlyingDecimals;
 
-    constructor(IERC20 asset_) ERC20("vote-escrowed XDEFI", "veXDEFI") {
+    constructor(IERC20 asset_) ERC20("vote-escrowed XDEFI", "vXDEFI") {
         (bool success, uint8 assetDecimals) = _tryGetAssetDecimals(asset_);
         _underlyingDecimals = success ? assetDecimals : 18;
         _asset = asset_;
