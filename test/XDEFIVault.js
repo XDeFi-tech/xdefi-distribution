@@ -98,6 +98,11 @@ describe('XDEFIVault', function () {
         await (await XDEFI.transfer(wallet.address, toWei(1000))).wait();
         await (await XDEFI.transfer(alice.address, toWei(1000))).wait();
 
+        await XDEFI.connect(owner).approve(vToken.address, totalSupply);
+        await vToken.connect(owner).deposit(toWei(2000), owner.address);
+
+        expect(await vToken.balanceOf(owner.address)).to.equal(toWei(2000));
+
         // Give 100 Ether to `accountWithPrivateKey`
         await owner.sendTransaction({ to: wallet.address, value: ethers.utils.parseEther('100') });
     });
@@ -107,7 +112,7 @@ describe('XDEFIVault', function () {
         expect(await vToken.symbol()).to.equal('vXDEFI');
     });
 
-    it('should allow vToken holders to approve a transfer', async function () {
+    it('should allow vToken holders to approve a transfer using permit', async function () {
         const amount = 100;
         await (await XDEFI.transfer(wallet.address, toWei(1000))).wait();
         const deadline = Math.floor(Date.now() / 1000) + 3600;
