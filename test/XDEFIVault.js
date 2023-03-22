@@ -189,6 +189,22 @@ describe('XDEFIVault', function () {
         expect(await xdefiVault.allowance(wallet.address, xdefiVault.address)).to.equal(amount2);
     });
 
+    it('should allow increaseAllowance', async function () {
+        const amount = 100;
+        await (await xdefiVault.increaseAllowance(wallet.address, amount)).wait();
+        expect(await xdefiVault.allowance(owner.address, wallet.address)).to.equal(amount);
+        await (await xdefiVault.increaseAllowance(wallet.address, amount)).wait();
+        expect(await xdefiVault.allowance(owner.address, wallet.address)).to.equal(2 * amount);
+    });
+
+    it('should allow decreaseAllowance', async function () {
+        const amount = 100;
+        await (await xdefiVault.increaseAllowance(wallet.address, amount)).wait();
+        expect(await xdefiVault.allowance(owner.address, wallet.address)).to.equal(amount);
+        await (await xdefiVault.decreaseAllowance(wallet.address, amount)).wait();
+        expect(await xdefiVault.allowance(owner.address, wallet.address)).to.equal(0);
+    });
+
     it('mint', async function () {});
     it('deposit', async function () {});
     it('withdraw', async function () {});
