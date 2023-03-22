@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 
 /**
- * @title XDEFI Vault - for vote-escrowed XDEFI (veXDEFI)
+ * @title XDEFI Vault - for vXDEFI (vXDEFI)
  * @author David P. (dp@xdefi.io)
  * @notice Unaudited experimental code. Do not use in production.
  */
