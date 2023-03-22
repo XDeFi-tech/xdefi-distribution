@@ -205,6 +205,49 @@ describe('XDEFIVault', function () {
         expect(await xdefiVault.allowance(owner.address, wallet.address)).to.equal(0);
     });
 
+    it('should get correct underlying asset address', async function () {
+        expect(await xdefiVault.asset()).to.equal(XDEFI.address);
+    });
+
+    it('should deposit and receive shares', async function () {
+        // Transfer 1000 underlying tokens to account1
+        await XDEFI.transfer(account1.address, ethers.utils.parseUnits('1000', 18));
+
+        // Approve the ERC4626 contract to spend underlying tokens on behalf of account1
+        await XDEFI.connect(account1).approve(xdefiVault.address, ethers.utils.parseUnits('1000', 18));
+
+        // Deposit 100 underlying tokens and receive shares
+        const depositAmount = ethers.utils.parseUnits('100', 18);
+        await xdefiVault.connect(account1).deposit(depositAmount, account1.address);
+
+        // Check the balance of account1 in the ERC4626 contract
+        const shareBalance = await xdefiVault.balanceOf(account1.address);
+        expect(shareBalance).to.not.equal(0);
+    });
+
+    it('should withdraw underlying assets and burn shares', async function () {
+        // Transfer 1000 underlying tokens to account1
+        await XDEFI.transfer(account1.address, ethers.utils.parseUnits('1000', 18));
+
+        // Approve the ERC4626 contract to spend underlying tokens on behalf of account1
+        await XDEFI.connect(account1).approve(xdefiVault.address, ethers.utils.parseUnits('1000', 18));
+
+        // Deposit 100 underlying tokens and receive shares
+        const depositAmount = ethers.utils.parseUnits('100', 18);
+        await xdefiVault.connect(account1).deposit(depositAmount, account1.address);
+
+        // Get the share balance of account1 in the ERC4626 contract
+        const initialShareBalance = await xdefiVault.balanceOf(account1.address);
+
+        // Withdraw underlying assets and burn shares
+        const withdrawAmount = ethers.utils.parseUnits('50', 18);
+        await xdefiVault.connect(account1).withdraw(withdrawAmount, account1.address, account1.address);
+
+        // Check the updated balance of account1 in the ERC4626 contract
+        const finalShareBalance = await xdefiVault.balanceOf(account1.address);
+        expect(finalShareBalance).to.be.lt(initialShareBalance);
+    });
+
     it('mint', async function () {});
     it('deposit', async function () {});
     it('withdraw', async function () {});
