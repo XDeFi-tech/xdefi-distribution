@@ -53,7 +53,7 @@ jobs:
 
         steps:
             - uses: actions/checkout@v3
-            - uses: crytic/slither-action@v0.2.0
+            - uses: crytic/slither-action@v0.3.0
               with:
                   slither-config: ./slither.config.json
                   fail-on: high
