@@ -173,6 +173,21 @@ describe('XDEFIVault', function () {
             'ERC20Permit: expired deadline'
         );
     });
+    it('should increase nonce after permit', async function () {
+        const amount = 100;
+        const deadline = Math.floor(Date.now() / 1000) + 3600;
+        const nonce = await xdefiVault.nonces(wallet.address);
+        const { v, r, s } = await createErc20PermitSignature(wallet, xdefiVault.address, amount, nonce, deadline);
+        await (await XDEFIVault.connect(account3)).permit(wallet.address, xdefiVault.address, amount, deadline, v, r, s);
+        const nonce1 = await xdefiVault.nonces(wallet.address);
+        expect(nonce1).to.equal(nonce.add(1));
+        const amount2 = 1000;
+        const { v: v1, r: r1, s: s1 } = await createErc20PermitSignature(wallet, xdefiVault.address, amount2, nonce1, deadline);
+        await (await XDEFIVault.connect(account3)).permit(wallet.address, xdefiVault.address, amount2, deadline, v1, r1, s1);
+        const nonce2 = await xdefiVault.nonces(wallet.address);
+        expect(nonce2).to.equal(nonce1.add(1));
+        expect(await xdefiVault.allowance(wallet.address, xdefiVault.address)).to.equal(amount2);
+    });
 
     it('mint', async function () {});
     it('deposit', async function () {});
