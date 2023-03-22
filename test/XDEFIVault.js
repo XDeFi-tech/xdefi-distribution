@@ -130,7 +130,7 @@ describe('XDEFIVault', function () {
 
     it('should allow xdefiVault holders to approve a transfer using permit', async function () {
         const amount = 100;
-        const deadline = Math.floor(Date.now() / 1000) + 3600;
+        const deadline = Math.floor(Date.now()) + 3600;
         const nonce = await xdefiVault.nonces(wallet.address);
         const { v, r, s } = await createErc20PermitSignature(wallet, xdefiVault.address, amount, nonce, deadline);
         await (await XDEFIVault.connect(account3)).permit(wallet.address, xdefiVault.address, amount, deadline, v, r, s);
@@ -140,7 +140,7 @@ describe('XDEFIVault', function () {
     });
     it('should reject other signatures', async function () {
         const amount = 100;
-        const deadline = Math.floor(Date.now() / 1000) + 3600;
+        const deadline = Math.floor(Date.now()) + 3600;
         const nonce = await xdefiVault.nonces(wallet.address);
         const { v, r, s } = await createErc20PermitSignature(wallet, xdefiVault.address, amount, nonce, deadline);
         await expect(xdefiVault.permit(account3.address, xdefiVault.address, amount, deadline, v, r, s)).to.be.revertedWith(
@@ -149,7 +149,7 @@ describe('XDEFIVault', function () {
     });
     it('should reject revert used signatures', async function () {
         const amount = 100;
-        const deadline = Math.floor(Date.now() / 1000) + 3600;
+        const deadline = Math.floor(Date.now()) + 3600;
         const nonce = await xdefiVault.nonces(wallet.address);
         const { v, r, s } = await createErc20PermitSignature(wallet, xdefiVault.address, amount, nonce, deadline);
         await (await XDEFIVault.connect(account3)).permit(wallet.address, xdefiVault.address, amount, deadline, v, r, s);
@@ -164,7 +164,7 @@ describe('XDEFIVault', function () {
         );
     });
     it('should reject expired permit', async function () {
-        const deadline = Math.floor(Date.now() / 1000) - 60; // 1 minute ago
+        const deadline = 123;
         const nonce = await xdefiVault.nonces(wallet.address);
         const value = ethers.utils.parseUnits('50', 18);
         const { v, r, s } = await createErc20PermitSignature(wallet, xdefiVault.address, value, nonce, deadline);
@@ -175,7 +175,7 @@ describe('XDEFIVault', function () {
     });
     it('should increase nonce after permit', async function () {
         const amount = 100;
-        const deadline = Math.floor(Date.now() / 1000) + 3600;
+        const deadline = Math.floor(Date.now()) + 3600;
         const nonce = await xdefiVault.nonces(wallet.address);
         const { v, r, s } = await createErc20PermitSignature(wallet, xdefiVault.address, amount, nonce, deadline);
         await (await XDEFIVault.connect(account3)).permit(wallet.address, xdefiVault.address, amount, deadline, v, r, s);
