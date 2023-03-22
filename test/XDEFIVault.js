@@ -54,9 +54,6 @@ describe('XDEFIVault', function () {
     const totalSupply = toWei(100000000);
 
     const maxDeadline = Number.MAX_SAFE_INTEGER;
-    const EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA = '\x19\x01';
-    const ERC20_PERMIT_SIGNATURE_HASH = '0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9';
-    const CONSUME_PERMIT_SIGNATURE_HASH = '0xa0a7128942405265cd830695cb06df90c6bfdbbe22677cc592c3d36c3180b079';
     const privateKey = '0x7797c0f3db8b946604ec2039dfd9763e4ffdc53174342a2ed9b14fa3eda666a5';
     const wallet = new ethers.Wallet(privateKey, ethers.provider);
     wallet.privateKey = privateKey;
