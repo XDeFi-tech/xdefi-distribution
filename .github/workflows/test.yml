@@ -1,0 +1,59 @@
+name: Test CI
+
+on:
+    push:
+        branches:
+            - master
+            - v*
+    pull_request:
+        branches: [main]
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        strategy:
+            matrix:
+                node-version: [16.x]
+
+        steps:
+            - uses: actions/checkout@v3
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v2
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: "npm"
+            - run: yarn
+            - run: yarn test
+              env:
+                  FORCE_COLOR: 1
+
+    coverage:
+        runs-on: ubuntu-latest
+
+        strategy:
+            matrix:
+                node-version: [16.x]
+
+        steps:
+            - uses: actions/checkout@v3
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v2
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: "npm"
+            - run: yarn
+            - run: yarn coverage
+              env:
+                  NODE_OPTIONS: --max_old_space_size=4096
+            - uses: codecov/codecov-action@v3
+
+    analyze:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v3
+            - uses: crytic/slither-action@v0.2.0
+              with:
+                  slither-config: ./slither.config.json
+                  fail-on: high
