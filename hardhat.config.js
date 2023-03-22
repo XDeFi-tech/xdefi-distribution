@@ -1,7 +1,7 @@
 require('@nomiclabs/hardhat-waffle');
 require('hardhat-gas-reporter');
 require('solidity-coverage');
-const secrets = require('./.secrets.json');
+// const secrets = require('./.secrets.json');
 
 module.exports = {
     solidity: {
@@ -33,24 +33,27 @@ module.exports = {
     defaultNetwork: 'hardhat',
     networks: {
         hardhat: {},
-        ropsten: {
-            url: secrets.ropsten.rpc,
-            accounts: {
-                mnemonic: secrets.ropsten.mnemonic,
-                path: "m/44'/60'/0'/0",
-                initialIndex: 0,
-                count: 1,
-            },
+        coverage: {
+            url: 'http://127.0.0.1:8555', // Coverage launches its own ganache-cli client
         },
-        ganache: {
-            url: secrets.ganache.rpc,
-            accounts: {
-                mnemonic: secrets.ganache.mnemonic,
-                path: "m/44'/60'/0'/0",
-                initialIndex: 0,
-                count: 1,
-            },
-        },
+        // ropsten: {
+        //     url: secrets.ropsten.rpc,
+        //     accounts: {
+        //         mnemonic: secrets.ropsten.mnemonic,
+        //         path: "m/44'/60'/0'/0",
+        //         initialIndex: 0,
+        //         count: 1,
+        //     },
+        // },
+        // ganache: {
+        //     url: secrets.ganache.rpc,
+        //     accounts: {
+        //         mnemonic: secrets.ganache.mnemonic,
+        //         path: "m/44'/60'/0'/0",
+        //         initialIndex: 0,
+        //         count: 1,
+        //     },
+        // },
     },
     gasReporter: {
         currency: 'USD',
