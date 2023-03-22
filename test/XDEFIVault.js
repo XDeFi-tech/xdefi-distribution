@@ -248,11 +248,165 @@ describe('XDEFIVault', function () {
         expect(finalShareBalance).to.be.lt(initialShareBalance);
     });
 
-    it('mint', async function () {});
-    it('deposit', async function () {});
-    it('withdraw', async function () {});
-    it('redeem', async function () {});
-    it('transfer', async function () {});
-    it('transferFrom', async function () {});
-    it('withdraw with approval', async function () {});
+    it('mint', async function () {
+        // Transfer 1000 underlying tokens to account1
+        await XDEFI.transfer(account1.address, ethers.utils.parseUnits('1000', 18));
+
+        // Approve the ERC4626 contract to spend underlying tokens on behalf of account1
+        await XDEFI.connect(account1).approve(xdefiVault.address, ethers.utils.parseUnits('1000', 18));
+
+        // Mint 100 shares for account1
+        const mintAmount = ethers.utils.parseUnits('100', 18);
+        await xdefiVault.connect(account1).mint(mintAmount, account1.address);
+
+        // Check the balance of account1 in the ERC4626 contract
+        const shareBalance = await xdefiVault.balanceOf(account1.address);
+        expect(shareBalance).to.equal(mintAmount);
+    });
+
+    it('deposit', async function () {
+        // Transfer 1000 underlying tokens to account1
+        await XDEFI.transfer(account1.address, ethers.utils.parseUnits('1000', 18));
+
+        // Approve the ERC4626 contract to spend underlying tokens on behalf of account1
+        await XDEFI.connect(account1).approve(xdefiVault.address, ethers.utils.parseUnits('1000', 18));
+
+        // Deposit 100 underlying tokens and receive shares
+        const depositAmount = ethers.utils.parseUnits('100', 18);
+        await xdefiVault.connect(account1).deposit(depositAmount, account1.address);
+
+        // Check the balance of account1 in the ERC4626 contract
+        const shareBalance = await xdefiVault.balanceOf(account1.address);
+        expect(shareBalance).to.not.equal(0);
+    });
+
+    it('withdraw', async function () {
+        // Transfer 1000 underlying tokens to account1
+        await XDEFI.transfer(account1.address, ethers.utils.parseUnits('1000', 18));
+
+        // Approve the ERC4626 contract to spend underlying tokens on behalf of account1
+        await XDEFI.connect(account1).approve(xdefiVault.address, ethers.utils.parseUnits('1000', 18));
+
+        // Deposit 100 underlying tokens and receive shares
+        const depositAmount = ethers.utils.parseUnits('100', 18);
+        await xdefiVault.connect(account1).deposit(depositAmount, account1.address);
+
+        // Get the share balance of account1 in the ERC4626 contract
+        const initialShareBalance = await xdefiVault.balanceOf(account1.address);
+
+        // Withdraw underlying assets and burn shares
+        const withdrawAmount = ethers.utils.parseUnits('50', 18);
+        await xdefiVault.connect(account1).withdraw(withdrawAmount, account1.address, account1.address);
+
+        // Check the updated balance of account1 in the ERC4626 contract
+        const finalShareBalance = await xdefiVault.balanceOf(account1.address);
+        expect(finalShareBalance).to.be.lt(initialShareBalance);
+    });
+
+    it('redeem', async function () {
+        // Transfer 1000 underlying tokens to account1
+        await XDEFI.transfer(account1.address, ethers.utils.parseUnits('1000', 18));
+
+        // Approve the ERC4626 contract to spend underlying tokens on behalf of account1
+        await XDEFI.connect(account1).approve(xdefiVault.address, ethers.utils.parseUnits('1000', 18));
+
+        // Deposit 100 underlying tokens and receive shares
+        const depositAmount = ethers.utils.parseUnits('100', 18);
+        await xdefiVault.connect(account1).deposit(depositAmount, account1.address);
+
+        // Get the initial share balance of account1 in the ERC4626 contract
+        const initialShareBalance = await xdefiVault.balanceOf(account1.address);
+
+        // Redeem 50 shares for account1
+        const redeemAmount = ethers.utils.parseUnits('50', 18);
+        await xdefiVault.connect(account1).redeem(redeemAmount, account1.address, account1.address);
+
+        // Check the updated balance of account1 in the ERC4626 contract
+        const finalShareBalance = await xdefiVault.balanceOf(account1.address);
+        expect(finalShareBalance).to.be.lt(initialShareBalance);
+    });
+
+    it('transfer', async function () {
+        // Transfer 1000 underlying tokens to account1
+        await XDEFI.transfer(account1.address, ethers.utils.parseUnits('1000', 18));
+
+        // Approve the ERC4626 contract to spend underlying tokens on behalf of account1
+        await XDEFI.connect(account1).approve(xdefiVault.address, ethers.utils.parseUnits('1000', 18));
+
+        // Deposit 100 underlying tokens and receive shares
+        const depositAmount = ethers.utils.parseUnits('100', 18);
+        await xdefiVault.connect(account1).deposit(depositAmount, account1.address);
+
+        //start
+        const sender = account1;
+        const receiver = account2;
+
+        const initialSenderBalance = await xdefiVault.balanceOf(sender.address);
+        const initialReceiverBalance = await xdefiVault.balanceOf(receiver.address);
+        const transferAmount = ethers.utils.parseEther('1');
+
+        // Transfer tokens from the sender to the receiver using transfer
+        await xdefiVault.connect(sender).transfer(receiver.address, transferAmount);
+
+        const finalSenderBalance = await xdefiVault.balanceOf(sender.address);
+        const finalReceiverBalance = await xdefiVault.balanceOf(receiver.address);
+
+        expect(finalSenderBalance).to.equal(initialSenderBalance.sub(transferAmount));
+        expect(finalReceiverBalance).to.equal(initialReceiverBalance.add(transferAmount));
+    });
+    it('transferFrom', async function () {
+        // Transfer 1000 underlying tokens to account1
+        await XDEFI.transfer(account1.address, ethers.utils.parseUnits('1000', 18));
+
+        // Approve the ERC4626 contract to spend underlying tokens on behalf of account1
+        await XDEFI.connect(account1).approve(xdefiVault.address, ethers.utils.parseUnits('1000', 18));
+
+        // Deposit 100 underlying tokens and receive shares
+        const depositAmount = ethers.utils.parseUnits('100', 18);
+        await xdefiVault.connect(account1).deposit(depositAmount, account1.address);
+        const sender = account1;
+        const receiver = account2;
+        const spender = account3;
+        const transferAmount = ethers.utils.parseEther('2');
+        const initialSenderBalance = await xdefiVault.balanceOf(sender.address);
+        const initialReceiverBalance = await xdefiVault.balanceOf(receiver.address);
+
+        // Approve the spender to transfer tokens from the sender
+        await xdefiVault.connect(sender).approve(spender.address, transferAmount);
+
+        // Transfer tokens from the sender to the receiver using transferFrom
+        await xdefiVault.connect(spender).transferFrom(sender.address, receiver.address, transferAmount);
+
+        const finalSenderBalance = await xdefiVault.balanceOf(sender.address);
+        const finalReceiverBalance = await xdefiVault.balanceOf(receiver.address);
+
+        expect(finalSenderBalance).to.equal(initialSenderBalance.sub(transferAmount));
+        expect(finalReceiverBalance).to.equal(initialReceiverBalance.add(transferAmount));
+    });
+
+    it('withdraw with approval', async function () {
+        const sender = account1;
+        const receiver = account2;
+        const spender = account3;
+
+        const depositAmount = ethers.utils.parseEther('10');
+        await XDEFI.connect(sender).approve(xdefiVault.address, depositAmount);
+        await xdefiVault.connect(sender).deposit(depositAmount, sender.address);
+
+        const initialSenderShares = await xdefiVault.balanceOf(sender.address);
+        const initialReceiverAssets = await XDEFI.balanceOf(receiver.address);
+
+        // Approve the spender to redeem tokens from the sender
+        await xdefiVault.connect(sender).approve(spender.address, initialSenderShares);
+
+        // Withdraw assets using withdraw function with approval
+        const assetsToWithdraw = await xdefiVault.previewRedeem(initialSenderShares);
+        await xdefiVault.connect(spender).withdraw(assetsToWithdraw, receiver.address, sender.address);
+
+        const finalSenderShares = await xdefiVault.balanceOf(sender.address);
+        const finalReceiverAssets = await XDEFI.balanceOf(receiver.address);
+
+        expect(finalSenderShares).to.equal(0);
+        expect(finalReceiverAssets).to.equal(initialReceiverAssets.add(assetsToWithdraw));
+    });
 });
