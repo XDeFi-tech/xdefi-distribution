@@ -130,7 +130,6 @@ describe('XDEFIVault', function () {
 
     it('should allow xdefiVault holders to approve a transfer using permit', async function () {
         const amount = 100;
-        await (await XDEFI.transfer(wallet.address, toWei(1000))).wait();
         const deadline = Math.floor(Date.now() / 1000) + 3600;
         const nonce = await xdefiVault.nonces(wallet.address);
         const { v, r, s } = await createErc20PermitSignature(wallet, xdefiVault.address, amount, nonce, deadline);
@@ -139,18 +138,41 @@ describe('XDEFIVault', function () {
         expect(nonce1).to.equal(nonce.add(1));
         expect(await xdefiVault.allowance(wallet.address, xdefiVault.address)).to.equal(amount);
     });
-    it('should reject other signatures', async function () {});
-    it('should reject revert used signatures', async function () {
-        //     const { v, r, s } = await buildData(this.token)
-        //     .then(data => ethSigUtil.signTypedMessage(wallet.getPrivateKey(), { data }))
-        //     .then(fromRpcSig);
-        //   await this.token.permit(owner, spender, value, maxDeadline, v, r, s);
-        //   await expectRevert(
-        //     this.token.permit(owner, spender, value, maxDeadline, v, r, s),
-        //     'ERC20Permit: invalid signature',
-        //   );
+    it('should reject other signatures', async function () {
+        const amount = 100;
+        const deadline = Math.floor(Date.now() / 1000) + 3600;
+        const nonce = await xdefiVault.nonces(wallet.address);
+        const { v, r, s } = await createErc20PermitSignature(wallet, xdefiVault.address, amount, nonce, deadline);
+        await expect(xdefiVault.permit(account3.address, xdefiVault.address, amount, deadline, v, r, s)).to.be.revertedWith(
+            'ERC20Permit: invalid signature'
+        );
     });
-    it('should reject expired permit', async function () {});
+    it('should reject revert used signatures', async function () {
+        const amount = 100;
+        const deadline = Math.floor(Date.now() / 1000) + 3600;
+        const nonce = await xdefiVault.nonces(wallet.address);
+        const { v, r, s } = await createErc20PermitSignature(wallet, xdefiVault.address, amount, nonce, deadline);
+        await (await XDEFIVault.connect(account3)).permit(wallet.address, xdefiVault.address, amount, deadline, v, r, s);
+        const nonce1 = await xdefiVault.nonces(wallet.address);
+        expect(nonce1).to.equal(nonce.add(1));
+        expect(await xdefiVault.allowance(wallet.address, xdefiVault.address)).to.equal(amount);
+
+        // re-use signature attempt...
+
+        await expect(xdefiVault.permit(wallet.address, xdefiVault.address, amount, deadline, v, r, s)).to.be.revertedWith(
+            'ERC20Permit: invalid signature'
+        );
+    });
+    it('should reject expired permit', async function () {
+        const deadline = Math.floor(Date.now() / 1000) - 60; // 1 minute ago
+        const nonce = await xdefiVault.nonces(wallet.address);
+        const value = ethers.utils.parseUnits('50', 18);
+        const { v, r, s } = await createErc20PermitSignature(wallet, xdefiVault.address, value, nonce, deadline);
+
+        await expect(xdefiVault.permit(wallet.address, xdefiVault.address, value, deadline, v, r, s)).to.be.revertedWith(
+            'ERC20Permit: expired deadline'
+        );
+    });
 
     it('mint', async function () {});
     it('deposit', async function () {});
