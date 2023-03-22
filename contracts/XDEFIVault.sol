@@ -11,7 +11,12 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
  * @notice Unaudited experimental code. Do not use in production.
  */
 contract XDEFIVault is ERC4626, ERC20Permit {
-    constructor(address underlying) ERC20("vXDEFI", "vXDEFI") ERC4626(IERC20(underlying)) ERC20Permit("vXDEFI") {}
+    bytes32 private immutable _salt;
+
+    constructor(address underlying) ERC20("vXDEFI", "vXDEFI") ERC4626(IERC20(underlying)) ERC20Permit("vXDEFI") {
+        require(underlying != address(0), "Underlying token address cannot be 0x0");
+        _salt = keccak256(abi.encodePacked(block.timestamp, msg.sender));
+    }
 
     function decimals() public view virtual override(ERC20, ERC4626) returns (uint8) {
         return ERC4626.decimals();
@@ -27,7 +32,7 @@ contract XDEFIVault is ERC4626, ERC20Permit {
             "1",
             block.chainid,
             address(this),
-            bytes32(0),
+            _salt,
             new uint256[](0)
         );
     }

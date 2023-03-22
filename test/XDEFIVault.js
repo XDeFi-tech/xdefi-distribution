@@ -124,7 +124,7 @@ describe('XDEFIVault', function () {
         expect(version).to.equal('1');
         expect(chainId).to.equal(await owner.getChainId());
         expect(verifyingContract).to.equal(xdefiVault.address);
-        expect(salt).to.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
+        expect(salt).to.not.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
         expect(extensions.length).to.equal(0);
     });
 
