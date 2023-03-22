@@ -44,7 +44,7 @@ const Permit = [
 describe('XDEFIVault', function () {
     let XDEFI;
     let XDEFIVault;
-    let vToken;
+    let xdefiVault;
     let owner;
     let alice;
     let account1;
@@ -75,7 +75,7 @@ describe('XDEFIVault', function () {
             };
         };
 
-        const data = await buildData(vToken, deadline);
+        const data = await buildData(xdefiVault, deadline);
         const sigRpc = ethSigUtil.signTypedMessage(Uint8Array.from(Buffer.from(owner.privateKey.substring(2), 'hex')), { data });
         const { v, r, s } = fromRpcSig(sigRpc);
 
@@ -86,9 +86,9 @@ describe('XDEFIVault', function () {
         [owner, alice, account1, account2, account3] = await ethers.getSigners();
         XDEFI = await (await (await ethers.getContractFactory('XDEFI')).deploy('XDEFI', 'XDEFI', totalSupply)).deployed();
         XDEFIVault = await ethers.getContractFactory('XDEFIVault');
-        vToken = await XDEFIVault.connect(owner).deploy(XDEFI.address);
-        XDEFIVault = await vToken.deployed();
-        vTokenAlice = await XDEFIVault.connect(alice);
+        xdefiVault = await XDEFIVault.connect(owner).deploy(XDEFI.address);
+        XDEFIVault = await xdefiVault.deployed();
+        xdefiVaultAlice = await XDEFIVault.connect(alice);
         xdefiDomainSeparator = await XDEFI.DOMAIN_SEPARATOR();
 
         // Give each account 1000 XDEFI
@@ -98,28 +98,65 @@ describe('XDEFIVault', function () {
         await (await XDEFI.transfer(wallet.address, toWei(1000))).wait();
         await (await XDEFI.transfer(alice.address, toWei(1000))).wait();
 
-        await XDEFI.connect(owner).approve(vToken.address, totalSupply);
-        await vToken.connect(owner).deposit(toWei(2000), owner.address);
+        await XDEFI.connect(owner).approve(xdefiVault.address, totalSupply);
+        await xdefiVault.connect(owner).deposit(toWei(2000), owner.address);
 
-        expect(await vToken.balanceOf(owner.address)).to.equal(toWei(2000));
+        expect(await xdefiVault.balanceOf(owner.address)).to.equal(toWei(2000));
 
         // Give 100 Ether to `accountWithPrivateKey`
         await owner.sendTransaction({ to: wallet.address, value: ethers.utils.parseEther('100') });
     });
 
     it('should have correct name and symbol', async function () {
-        expect(await vToken.name()).to.equal('vXDEFI');
-        expect(await vToken.symbol()).to.equal('vXDEFI');
+        expect(await xdefiVault.name()).to.equal('vXDEFI');
+        expect(await xdefiVault.symbol()).to.equal('vXDEFI');
     });
 
-    it('should allow vToken holders to approve a transfer using permit', async function () {
+    it('should have correct decimals', async function () {
+        expect(await xdefiVault.decimals()).to.equal(18);
+    });
+
+    it('should return correct EIP-712 domain', async function () {
+        const [fields, name, version, chainId, verifyingContract, salt, extensions] = await xdefiVault.eip712Domain();
+
+        expect(fields).to.equal('0x0f');
+        expect(name).to.equal('vXDEFI');
+        expect(version).to.equal('1');
+        expect(chainId).to.equal(await owner.getChainId());
+        expect(verifyingContract).to.equal(xdefiVault.address);
+        expect(salt).to.equal('0x0000000000000000000000000000000000000000000000000000000000000000');
+        expect(extensions.length).to.equal(0);
+    });
+
+    it('should allow xdefiVault holders to approve a transfer using permit', async function () {
         const amount = 100;
         await (await XDEFI.transfer(wallet.address, toWei(1000))).wait();
         const deadline = Math.floor(Date.now() / 1000) + 3600;
-        const nonce = await vToken.nonces(wallet.address);
-        const { v, r, s } = await createErc20PermitSignature(wallet, vToken.address, amount, nonce, deadline);
-        // console.log({ v, r, s });
-        await (await XDEFIVault.connect(account3)).permit(wallet.address, vToken.address, amount, deadline, v, r, s);
-        expect(await vToken.allowance(wallet.address, vToken.address)).to.equal(amount);
+        const nonce = await xdefiVault.nonces(wallet.address);
+        const { v, r, s } = await createErc20PermitSignature(wallet, xdefiVault.address, amount, nonce, deadline);
+        await (await XDEFIVault.connect(account3)).permit(wallet.address, xdefiVault.address, amount, deadline, v, r, s);
+        const nonce1 = await xdefiVault.nonces(wallet.address);
+        expect(nonce1).to.equal(nonce.add(1));
+        expect(await xdefiVault.allowance(wallet.address, xdefiVault.address)).to.equal(amount);
     });
+    it('should reject other signatures', async function () {});
+    it('should reject revert used signatures', async function () {
+        //     const { v, r, s } = await buildData(this.token)
+        //     .then(data => ethSigUtil.signTypedMessage(wallet.getPrivateKey(), { data }))
+        //     .then(fromRpcSig);
+        //   await this.token.permit(owner, spender, value, maxDeadline, v, r, s);
+        //   await expectRevert(
+        //     this.token.permit(owner, spender, value, maxDeadline, v, r, s),
+        //     'ERC20Permit: invalid signature',
+        //   );
+    });
+    it('should reject expired permit', async function () {});
+
+    it('mint', async function () {});
+    it('deposit', async function () {});
+    it('withdraw', async function () {});
+    it('redeem', async function () {});
+    it('transfer', async function () {});
+    it('transferFrom', async function () {});
+    it('withdraw with approval', async function () {});
 });
