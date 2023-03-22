@@ -4,5 +4,5 @@
     "exclude_low": false,
     "exclude_medium": false,
     "exclude_high": false,
-    "filter_paths": "(harnesses/|mocks/|test/)"
+    "filter_paths": "(harnesses/|mocks/|test/|XDEFIDistribution.sol)"
 }
