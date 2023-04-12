@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC20/extensions/draft-ERC20Permit.sol";
 /**
  * @title XDEFI Vault - for vXDEFI (vXDEFI)
  * @author David P. (dp@xdefi.io)
- * @notice Unaudited experimental code. Do not use in production.
  */
 contract XDEFIVault is ERC4626, ERC20Permit {
     bytes32 private immutable _salt;
